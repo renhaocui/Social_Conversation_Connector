@@ -7,7 +7,74 @@ socialServiceURL = 'https://api.astutesocial.com/v1/conversation/message'
 socialToken = 'RsvANwIcSlIIeimtvc65cQ=='
 
 
-def generateHomeArticles(lang='en'):
+def generateMessengerHome(token, recipient, lang='en'):
+    messengerSendURL = 'https://graph.facebook.com/v2.6/me/messages?access_token=' + token
+    data = {
+        "recipient": {
+            "id": recipient
+        },
+        "message": {
+            "attachment": {
+                "type": "template",
+                "payload": {
+                    "template_type": "generic",
+                    "elements": [
+                        {
+                            "title": "FordPass",
+                            "image_url": "https://dl.dropboxusercontent.com/u/93550717/site/fordpasslogo.png",
+                            "subtitle": "Making your journey easier, propels us further.",
+                            "buttons": [
+                                {
+                                    "type": "web_url",
+                                    "url": "https://www.fordpass.com",
+                                    "title": "More Details"
+                                },
+                                {
+                                    "type": "web_url",
+                                    "title": "My Vehicles",
+                                    "url": "https://dl.dropboxusercontent.com/u/93550717/site/test1.html"
+                                },
+                                {
+                                    "type": "web_url",
+                                    "title": "My Dealer",
+                                    "url": "https://dl.dropboxusercontent.com/u/93550717/site/test1.html"
+                                },
+                            ]
+                        },
+                        {
+                            "title": "FordPass",
+                            "image_url": "https://dl.dropboxusercontent.com/u/93550717/site/fordpasslogo.png",
+                            "subtitle": "Making your journey easier, propels us further.",
+                            "buttons": [
+                                {
+                                    "type": "web_url",
+                                    "url": "https://www.bing.com/mapspreview",
+                                    "title": "Parking"
+                                },
+                                {
+                                    "type": "web_url",
+                                    "url": "https://dl.dropboxusercontent.com/u/93550717/site/GuidesHome.html",
+                                    "title": "Guides"
+                                },
+                                {
+                                    "type": "web_url",
+                                    "url": "https://dl.dropboxusercontent.com/u/93550717/site/test2.html",
+                                    "title": "Roadside Assistance"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+    }
+
+    response = requests.post(messengerSendURL, json=data, verify=False)
+
+    return response, json.loads(response.text)
+
+
+def generateWeChatHome(lang='en'):
     outputList = []
 
     temp = {'title': 'FordPass', 'description': 'Ford Pass',
@@ -138,6 +205,7 @@ def forwardConversation(platform, conversationStatus, conversationID, messageID,
     return response1, response2
 
 
-    # token = 'EAAB1kFElgToBAHRJmoshPkpQzpEF2FviWyY9GdA5lUZBPwqRVb3tQdz9vlOkkLZBpp0nihxN5yyBJxDEZC3nTROBaosUYhiMWwwPcqUJiFEZA6lqQwcFHwfpWYZB8d7v5OsaZB2YDgLqRmpdNxvHy7s4pPiuPe8xK1MhFdgoRimgZDZD'
-    # status, response = sendMessenger(token, '1131072490299142', 'test')
-    # print json.loads(response)['message_id']
+#token = 'EAAB1kFElgToBAHRJmoshPkpQzpEF2FviWyY9GdA5lUZBPwqRVb3tQdz9vlOkkLZBpp0nihxN5yyBJxDEZC3nTROBaosUYhiMWwwPcqUJiFEZA6lqQwcFHwfpWYZB8d7v5OsaZB2YDgLqRmpdNxvHy7s4pPiuPe8xK1MhFdgoRimgZDZD'
+# status, response = sendMessenger(token, '1131072490299142', generateMessengerHome())
+#print generateMessengerHome(token, '1131072490299142', lang='en')
+# print json.loads(response)['message_id']
