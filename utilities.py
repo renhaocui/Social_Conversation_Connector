@@ -79,16 +79,25 @@ def generateConversationID(toUserName, fromUserName):
     return output
 
 
+def splitMessage(inputMsg, limit):
+    contentList = []
+    while len(inputMsg) > limit:
+        contentList.append(inputMsg[:limit])
+        inputMsg = inputMsg[limit:]
+    contentList.append(inputMsg)
+    return contentList
+
+
 def sendMessenger(token, recipient, content):
-    messengerSendURL = 'https://graph.facebook.com/v2.6/me/messages?access_token='+token
+    messengerSendURL = 'https://graph.facebook.com/v2.6/me/messages?access_token=' + token
     data = {'recipient': {'id': recipient}, 'message': {'text': content}}
 
     response = requests.post(messengerSendURL, json=data, verify=False)
-
     return response, json.loads(response.text)
 
 
-def forwardUserMessage(platform, conversationStatus, conversationID, messageID, fromUserName, toUserName, content, createdTime):
+def forwardUserMessage(platform, conversationStatus, conversationID, messageID, fromUserName, toUserName, content,
+                       createdTime):
     data = {'access_token': socialToken, 'platform': platform, 'conversation_status': conversationStatus,
             'conversation_service_id': conversationID, 'from_id': fromUserName, 'service_id': messageID,
             'to_id': toUserName, 'content': content, 'content_type': 'text', 'created_time': createdTime}
@@ -99,8 +108,19 @@ def forwardUserMessage(platform, conversationStatus, conversationID, messageID, 
     return response
 
 
+def forwardAKMessage(platform, conversationStatus, conversationID, messageID, fromUserName, toUserName, content,
+                     createdTime):
+    data = {'access_token': socialToken, 'platform': platform, 'conversation_status': conversationStatus,
+            'conversation_service_id': conversationID, 'from_id': fromUserName, 'service_id': messageID,
+            'to_id': toUserName, 'content': content, 'content_type': 'text', 'created_time': createdTime}
+
+    response = requests.post(socialServiceURL, json=data, verify=False)
+
+    return response
+
+
 def forwardConversation(platform, conversationStatus, conversationID, messageID, fromUserName, toUserName, content,
-                        createdTime1, answer, createdTime2):
+                        createdTime1, answer, createdTime2, mid=''):
     data1 = {'access_token': socialToken, 'platform': platform, 'conversation_status': conversationStatus,
              'conversation_service_id': conversationID, 'from_id': fromUserName, 'service_id': messageID,
              'to_id': toUserName, 'content': content, 'content_type': 'text', 'created_time': createdTime1}
@@ -109,7 +129,7 @@ def forwardConversation(platform, conversationStatus, conversationID, messageID,
     print 'Forward user messages to Social ' + str(response1)
 
     data2 = {'access_token': socialToken, 'platform': platform, 'conversation_status': conversationStatus,
-             'conversation_service_id': conversationID, 'from_id': toUserName, 'service_id': '',
+             'conversation_service_id': conversationID, 'from_id': toUserName, 'service_id': mid,
              'to_id': fromUserName, 'content': answer, 'content_type': 'text', 'created_time': createdTime2}
 
     response2 = requests.post(socialServiceURL, json=data2, verify=False)
@@ -118,6 +138,6 @@ def forwardConversation(platform, conversationStatus, conversationID, messageID,
     return response1, response2
 
 
-#token = 'EAAB1kFElgToBAHRJmoshPkpQzpEF2FviWyY9GdA5lUZBPwqRVb3tQdz9vlOkkLZBpp0nihxN5yyBJxDEZC3nTROBaosUYhiMWwwPcqUJiFEZA6lqQwcFHwfpWYZB8d7v5OsaZB2YDgLqRmpdNxvHy7s4pPiuPe8xK1MhFdgoRimgZDZD'
-#status, response = sendMessenger(token, '1131072490299142', 'test')
-#print json.loads(response)['message_id']
+    # token = 'EAAB1kFElgToBAHRJmoshPkpQzpEF2FviWyY9GdA5lUZBPwqRVb3tQdz9vlOkkLZBpp0nihxN5yyBJxDEZC3nTROBaosUYhiMWwwPcqUJiFEZA6lqQwcFHwfpWYZB8d7v5OsaZB2YDgLqRmpdNxvHy7s4pPiuPe8xK1MhFdgoRimgZDZD'
+    # status, response = sendMessenger(token, '1131072490299142', 'test')
+    # print json.loads(response)['message_id']

@@ -10,6 +10,7 @@ from datetime import datetime
 import wechatManager
 import xmltodict
 import hashlib
+import json
 
 app = Flask(__name__)
 
@@ -37,7 +38,8 @@ languageCode_en = 'en-US'
 languageCode_zh = 'zh'
 identifier = LanguageIdentifier.from_modelstring(model, norm_probs=True)
 
-messenger_token = 'EAAB1kFElgToBAHRJmoshPkpQzpEF2FviWyY9GdA5lUZBPwqRVb3tQdz9vlOkkLZBpp0nihxN5yyBJxDEZC3nTROBaosUYhiMWwwPcqUJiFEZA6lqQwcFHwfpWYZB8d7v5OsaZB2YDgLqRmpdNxvHy7s4pPiuPe8xK1MhFdgoRimgZDZD'
+token = 'EAAB1kFElgToBAHRJmoshPkpQzpEF2FviWyY9GdA5lUZBPwqRVb3tQdz9vlOkkLZBpp0nihxN5yyBJxDEZC3nTROBaosUYhiMWwwPcqUJiFEZA6lqQwcFHwfpWYZB8d7v5OsaZB2YDgLqRmpdNxvHy7s4pPiuPe8xK1MhFdgoRimgZDZD'
+messengerTokenList = {'276165652474701': token}
 
 if app.debug is not True:
     import logging
@@ -63,9 +65,8 @@ def not_found(error):
 
 @app.route('/', methods=['GET'])
 def wechatServerVerifier():
-    token = 'astute_wechat_test'
+    verification_token = 'astute_wechat_test'
     print 'WeChat Server Verify Request Received'
-    print request
     signature = request.args['signature']
     timestamp = request.args['timestamp']
     nonce = request.args['nonce']
@@ -76,7 +77,7 @@ def wechatServerVerifier():
     if not signature or not timestamp or not nonce:
         print 'Reject'
         return 'Error'
-    tmp_list = [token, timestamp, nonce]
+    tmp_list = [verification_token, timestamp, nonce]
     tmp_list.sort()
     tmp_str = ''.join(tmp_list)
     if signature != hashlib.sha1(tmp_str.encode('utf-8')).hexdigest():
@@ -88,8 +89,8 @@ def wechatServerVerifier():
 
 @app.route('/FBmessenger', methods=['GET'])
 def messengerServerVerifier():
-    print request
-    if request.args['hub.mode'] == 'subscribe' and request.args['hub.verify_token'] == 'astute_messenger_test':
+    verification_token = 'astute_messenger_test'
+    if request.args['hub.mode'] == 'subscribe' and request.args['hub.verify_token'] == verification_token:
         print 'Messenger verification passed'
         return request.args['hub.challenge'], 200
     else:
@@ -132,7 +133,7 @@ def wechatLookupUser():
 def setConversationStatus():
     global conversationStatusList
     body = request.get_json()
-    platform = body['conversation_id']
+    platform = body['platform']
     conversationID = body['conversation_id']
     status = body['status']
     print '[' + platform + ']Conversation status update for conversationID: [' + conversationID + ']'
@@ -145,6 +146,7 @@ def setConversationStatus():
 def sendMessage():
     global conversationStatusList
     body = request.get_json()
+    access_token = body['access_token']
     platform = body['platform']
     conversationID = body['conversation_id']
     contentType = body['content_type']
@@ -169,19 +171,28 @@ def sendMessage():
                 tempWechat.send_text_message(user_id=userID, content=content)
                 print '[' + platform + ']Message sent to user: ' + userID
                 t = Thread(target=utilities.forwardUserMessage,
-                           args=(platform,
-                                 'agent', conversationID, '', accountID, userID, content,
-                                 str(datetime.now().isoformat()[:-7]) + 'Z'))
+                           args=(platform, 'agent', conversationID, '', accountID, userID, content, str(datetime.now().isoformat()[:-7]) + 'Z'))
                 t.start()
                 return '', 200
             else:
-                sendStatus, response = utilities.sendMessenger(messenger_token, userID, content)
-                t = Thread(target=utilities.forwardUserMessage,
-                           args=(platform,
-                                 'agent', conversationID, '', accountID, userID, content,
-                                 str(datetime.now().isoformat()[:-7]) + 'Z'))
-                t.start()
-                return {'service_id': response['message_id']}, sendStatus
+                contentList = utilities.splitMessage(content, 320)
+                status = True
+                for content in contentList:
+                    try:
+                        sendStatus, responseContent = utilities.sendMessenger(access_token, userID, content)
+                        if sendStatus.status_code != 200:
+                            status = False
+                        else:
+                            utilities.forwardUserMessage(platform, 'agent', conversationID, responseContent['message_id'], accountID, userID, content,
+                                                         str(datetime.now().isoformat()[:-7]) + 'Z')
+                    except Exception as e:
+                        print e
+                        continue
+                if status:
+                    statusCode = 200
+                else:
+                    statusCode = 503
+                return '', statusCode
         else:
             return '', 503
     else:
@@ -195,6 +206,7 @@ def setAccountStatus():
     platform = body['platform']
     accountID = body['user_id']
     print '[' + platform + ']Set Account Status for: ' + str(accountID)
+
     helpFlag = body['escalate_on_help']
     kmsFailureFlag = body['escalate_on_kms_failure']
     accountStatusList[platform][accountID] = (helpFlag, kmsFailureFlag)
@@ -207,7 +219,6 @@ def messengerProcessRequest():
     global conversationStatusList
     global topTopics
     body = request.json
-    # print body
     if 'message' in body['entry'][0]['messaging'][0]:
         sender = body['entry'][0]['messaging'][0]['sender']['id']
         recipient = body['entry'][0]['messaging'][0]['recipient']['id']
@@ -233,75 +244,56 @@ def messengerProcessRequest():
                                 conversationStatusList['Facebook'][conversationID] == 'kms')):
                 conversationStatusList['Facebook'][conversationID] = 'agent'
                 response = 'Agent service requested, please wait...\n Type END to disconnect.'
-                sendStatus, responseContent = utilities.sendMessenger(messenger_token, sender, response)
-                t = Thread(target=utilities.forwardConversation,
-                           args=(
-                           'Facebook', 'agent', conversationID, messageID, sender, recipient, content, createdTime,
-                           response, str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z'))
-                t.start()
+                sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
+                if sendStatus.status_code == 200:
+                    utilities.forwardConversation('Facebook', 'agent', conversationID, messageID, sender, recipient, content, createdTime, response,
+                                                  str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
             # end of agent conversation
-            elif content.lower() == 'end' and (conversationID in conversationStatusList['Facebook']) and \
-                            conversationStatusList['Facebook'][
-                                conversationID] == 'agent':
+            elif content.lower() == 'end' and (conversationID in conversationStatusList['Facebook']) \
+                    and conversationStatusList['Facebook'][conversationID] == 'agent':
                 conversationStatusList['Facebook'][conversationID] = 'kms'
                 response = 'Agent Disconnected, Goodbye'
-                sendStatus, responseContent = utilities.sendMessenger(messenger_token, sender, response)
-                t = Thread(target=utilities.forwardConversation,
-                           args=('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime,
-                                 response, str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z'))
-                t.start()
+                sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
+                if sendStatus.status_code == 200:
+                    utilities.forwardConversation('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime, response,
+                                                  str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
             # agent conversation
-            elif (conversationID in conversationStatusList['Facebook']) and conversationStatusList['Facebook'][
-                conversationID] == 'agent':
-                t = Thread(target=utilities.forwardUserMessage,
-                           args=(
-                           'Facebook', 'agent', conversationID, messageID, sender, recipient, content, createdTime))
-                t.start()
+            elif (conversationID in conversationStatusList['Facebook']) and conversationStatusList['Facebook'][conversationID] == 'agent':
+                utilities.forwardUserMessage('Facebook', 'agent', conversationID, messageID, sender, recipient, content, createdTime)
             else:
                 try:
-                    topTopics['Facebook'], response, status = utilities.AKRequest(content, topTopics['Facebook'],
-                                                                                  languageCode_en)
+                    topTopics['Facebook'], response, status = utilities.AKRequest(content, topTopics['Facebook'], languageCode_en)
                     if status != '1':
                         if accountStatus[1]:
                             response += ' An agent will be with you shortly.'
                             conversationStatusList['Facebook'][conversationID] = 'agent'
-                            sendStatus, responseContent = utilities.sendMessenger(messenger_token, sender, response)
-                            t = Thread(target=utilities.forwardConversation,
-                                       args=('Facebook',
-                                             'agent', conversationID, messageID, sender, recipient, content,
-                                             createdTime,
-                                             response,
-                                             str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z'))
-                            t.start()
+                            sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
+                            if sendStatus.status_code == 200:
+                                utilities.forwardConversation('Facebook', 'agent', conversationID, messageID, sender, recipient, content, createdTime, response,
+                                                              str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
                         else:
                             if accountStatus[0]:
                                 response += ' Type HELP for a real agent.'
-                            sendStatus, responseContent = utilities.sendMessenger(messenger_token, sender, response)
-                            t = Thread(target=utilities.forwardConversation,
-                                       args=('Facebook',
-                                             'kms', conversationID, messageID, sender, recipient, content,
-                                             createdTime,
-                                             response,
-                                             str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z'))
-                            t.start()
+                            sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
+                            if sendStatus.status_code == 200:
+                                utilities.forwardConversation('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime, response,
+                                                              str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
                     else:
-                        sendStatus, responseContent = utilities.sendMessenger(messenger_token, sender, response)
-                        t = Thread(target=utilities.forwardConversation,
-                                   args=('Facebook',
-                                         'kms', conversationID, messageID, sender, recipient, content, createdTime,
-                                         response,
-                                         str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z'))
-                        t.start()
-                except:
+                        utilities.forwardUserMessage('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime)
+                        contentList = utilities.splitMessage(response, 320)
+                        for content in contentList:
+                            sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, content)
+                            if sendStatus.status_code == 200:
+                                utilities.forwardAKMessage('Facebook', 'kms', conversationID, responseContent['message_id'], recipient, sender, content,
+                                                           str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z')
+                except Exception as e:
+                    print e
                     response = 'Cannot connect to Astute Knowledge Server. Type HELP for a real agent.'
-                    sendStatus, responseContent = utilities.sendMessenger(messenger_token, sender, response)
-                    t = Thread(target=utilities.forwardConversation,
-                               args=('Facebook',
-                                     'kms', conversationID, messageID, sender, recipient, content,
-                                     createdTime,
-                                     response,
-                                     str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z'))
-                    t.start()
+                    sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
+                    if sendStatus.status_code == 200:
+                        utilities.forwardConversation('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime, response,
+                                                      str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
+                    return '', 200
         else:
             print 'Chinese Session'
             # start of agent conversation
@@ -310,74 +302,59 @@ def messengerProcessRequest():
                                 conversationStatusList['Facebook'][conversationID] == 'kms')):
                 conversationStatusList['Facebook'][conversationID] = 'agent'
                 response = '客服连接中，请稍后...\n输入【结束】将结束本次服务。'
-                sendStatus, responseContent = utilities.sendMessenger(messenger_token, sender, response)
-                t = Thread(target=utilities.forwardConversation,
-                           args=(
-                           'Facebook', 'agent', conversationID, messageID, sender, recipient, content, createdTime,
-                           response, str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z'))
-                t.start()
+                sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
+                if sendStatus.status_code == 200:
+                    utilities.forwardConversation('Facebook', 'agent', conversationID, messageID, sender, recipient, content, createdTime, response,
+                                                  str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
             # end of agent conversation
             elif content == u'结束' and (conversationID in conversationStatusList['Facebook']) and \
-                            conversationStatusList['Facebook'][
-                                conversationID] == 'agent':
+                            conversationStatusList['Facebook'][conversationID] == 'agent':
                 conversationStatusList['Facebook'][conversationID] = 'kms'
                 response = '本次服务结束，谢谢。'
-                sendStatus, responseContent = utilities.sendMessenger(messenger_token, sender, response)
-                t = Thread(target=utilities.forwardConversation,
-                           args=('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime,
-                                 response, str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z'))
-                t.start()
+                sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
+                if sendStatus.status_code == 200:
+                    utilities.forwardConversation('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime, response,
+                                                  str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
             # agent conversation
             elif (conversationID in conversationStatusList['Facebook']) and conversationStatusList['Facebook'][
                 conversationID] == 'agent':
-                t = Thread(target=utilities.forwardUserMessage,
-                           args=(
-                           'Facebook', 'agent', conversationID, messageID, sender, recipient, content, createdTime))
-                t.start()
+                utilities.forwardUserMessage('Facebook', 'agent', conversationID, messageID, sender, recipient, content,
+                                             createdTime)
+
             else:
                 try:
-                    topTopics['Facebook'], response, status = utilities.AKRequest(content, topTopics['Facebook'],
-                                                                                  languageCode_zh)
+                    topTopics['Facebook'], response, status = utilities.AKRequest(content, topTopics['Facebook'], languageCode_zh)
                     if status != '1':
                         if accountStatus[1]:
                             response += ' 我们会为您安排客服解答。'
-                            sendStatus, responseContent = utilities.sendMessenger(messenger_token, sender, response)
-                            conversationStatusList['Facebook'][conversationID] = 'agent'
-                            t = Thread(target=utilities.forwardConversation,
-                                       args=('Facebook',
-                                             'agent', conversationID, messageID, sender, recipient, content,
-                                             createdTime,
-                                             response,
-                                             str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z'))
-                            t.start()
+                            sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
+                            if sendStatus.status_code == 200:
+                                conversationStatusList['Facebook'][conversationID] = 'agent'
+                                utilities.forwardConversation('Facebook', 'agent', conversationID, messageID, sender, recipient, content, createdTime, response,
+                                                              str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
                         else:
                             if accountStatus[0]:
                                 response += ' 输入【求助】将为您安排客服。'
-                            sendStatus, responseContent = utilities.sendMessenger(messenger_token, sender, response)
-                            t = Thread(target=utilities.forwardConversation,
-                                       args=('Facebook',
-                                             'kms', conversationID, messageID, sender, recipient, content,
-                                             createdTime,
-                                             response,
-                                             str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z'))
-                            t.start()
+                            sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
+                            if sendStatus.status_code == 200:
+                                utilities.forwardConversation('Facebook',
+                                                              'kms', conversationID, messageID, sender, recipient, content, createdTime, response,
+                                                              str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
                     else:
-                        t = Thread(target=utilities.forwardConversation,
-                                   args=('Facebook',
-                                         'kms', conversationID, messageID, sender, recipient, content, createdTime,
-                                         response,
-                                         str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z'))
-                        t.start()
+                        utilities.forwardUserMessage('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime)
+                        contentList = utilities.splitMessage(response, 320)
+                        for content in contentList:
+                            sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, content)
+                            if sendStatus.status_code == 200:
+                                utilities.forwardAKMessage('Facebook', 'kms', conversationID, responseContent['message_id'], recipient, sender, content,
+                                                           str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z')
                 except:
                     response = '无法连接数据服务器。 输入【求助】将为您安排客服。'
-                    sendStatus, responseContent = utilities.sendMessenger(messenger_token, sender, response)
-                    t = Thread(target=utilities.forwardConversation,
-                               args=('Facebook',
-                                     'kms', conversationID, messageID, sender, recipient, content,
-                                     createdTime,
-                                     response,
-                                     str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z'))
-                    t.start()
+                    sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
+                    if sendStatus.status_code == 200:
+                        utilities.forwardConversation('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime, response,
+                                                      str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
+                    return '', 200
     return '', 200
 
 
@@ -432,72 +409,55 @@ def wechatProcessRequest():
                 conversationStatusList['WeChat'][conversationID] = 'agent'
                 response = 'Agent service requested, please wait...\n Type END to disconnect.'
                 t = Thread(target=utilities.forwardConversation,
-                           args=(
-                           'WeChat', 'agent', conversationID, messageID, fromUserName, toUserName, content, createdTime,
-                           response, str(datetime.fromtimestamp(wechat.message.time + 1).isoformat()) + 'Z'))
+                           args=['WeChat', 'agent', conversationID, messageID, fromUserName, toUserName, content, createdTime, response,
+                                 str(datetime.fromtimestamp(wechat.message.time + 1).isoformat()) + 'Z'])
                 t.start()
                 return wechat.response_text(response)
             # end of agent conversation
             elif content.lower() == 'end' and (conversationID in conversationStatusList['WeChat']) and \
-                            conversationStatusList['WeChat'][
-                                conversationID] == 'agent':
+                            conversationStatusList['WeChat'][conversationID] == 'agent':
                 conversationStatusList['WeChat'][conversationID] = 'kms'
                 response = 'Agent Disconnected, Goodbye'
                 t = Thread(target=utilities.forwardConversation,
-                           args=(
-                           'WeChat', 'kms', conversationID, messageID, fromUserName, toUserName, content, createdTime,
-                           response, str(datetime.fromtimestamp(wechat.message.time + 1).isoformat()) + 'Z'))
+                           args=['WeChat', 'kms', conversationID, messageID, fromUserName, toUserName, content, createdTime, response,
+                                 str(datetime.fromtimestamp(wechat.message.time + 1).isoformat()) + 'Z'])
                 t.start()
                 return wechat.response_text(response)
             # agent conversation
             elif (conversationID in conversationStatusList['WeChat']) and conversationStatusList['WeChat'][
                 conversationID] == 'agent':
                 t = Thread(target=utilities.forwardUserMessage,
-                           args=('WeChat', 'agent', conversationID, messageID, fromUserName, toUserName, content,
-                                 createdTime))
+                           args=('WeChat', 'agent', conversationID, messageID, fromUserName, toUserName, content, createdTime))
                 t.start()
                 return wechat.response_none()
             else:
                 try:
-                    topTopics['WeChat'], response, status = utilities.AKRequest(content, topTopics['WeChat'],
-                                                                                languageCode_en)
+                    topTopics['WeChat'], response, status = utilities.AKRequest(content, topTopics['WeChat'], languageCode_en)
                     if status != '1':
                         if accountStatus[1]:
                             response += ' An agent will be with you shortly.'
                             conversationStatusList['WeChat'][conversationID] = 'agent'
                             t = Thread(target=utilities.forwardConversation,
-                                       args=('WeChat',
-                                             'agent', conversationID, messageID, fromUserName, toUserName, content,
-                                             createdTime,
-                                             response,
+                                       args=('WeChat', 'agent', conversationID, messageID, fromUserName, toUserName, content, createdTime, response,
                                              str(datetime.fromtimestamp(wechat.message.time + 1).isoformat()) + 'Z'))
                             t.start()
                         else:
                             if accountStatus[0]:
                                 response += ' Type HELP for a real agent.'
                             t = Thread(target=utilities.forwardConversation,
-                                       args=('WeChat',
-                                             'kms', conversationID, messageID, fromUserName, toUserName, content,
-                                             createdTime,
-                                             response,
+                                       args=('WeChat', 'kms', conversationID, messageID, fromUserName, toUserName, content, createdTime, response,
                                              str(datetime.fromtimestamp(wechat.message.time + 1).isoformat()) + 'Z'))
                             t.start()
                     else:
                         t = Thread(target=utilities.forwardConversation,
-                                   args=('WeChat',
-                                         'kms', conversationID, messageID, fromUserName, toUserName, content,
-                                         createdTime,
-                                         response,
+                                   args=('WeChat', 'kms', conversationID, messageID, fromUserName, toUserName, content, createdTime, response,
                                          str(datetime.fromtimestamp(wechat.message.time + 1).isoformat()) + 'Z'))
                         t.start()
                 except Exception as e:
                     print e
                     response = 'Cannot connect to Astute Knowledge Server. Type HELP for a real agent.'
                     t = Thread(target=utilities.forwardConversation,
-                               args=('WeChat',
-                                     'kms', conversationID, messageID, fromUserName, toUserName, content,
-                                     createdTime,
-                                     response,
+                               args=('WeChat', 'kms', conversationID, messageID, fromUserName, toUserName, content, createdTime, response,
                                      str(datetime.fromtimestamp(wechat.message.time + 1).isoformat()) + 'Z'))
                     t.start()
                     return wechat.response_text(
@@ -507,14 +467,12 @@ def wechatProcessRequest():
             print 'Chinese Session'
             # start of agent conversation
             if content == u'求助' and accountStatus[0] and (
-                        (conversationID not in conversationStatusList['WeChat']) or (
-                                conversationStatusList['WeChat'][conversationID] == 'kms')):
+                        (conversationID not in conversationStatusList['WeChat']) or (conversationStatusList['WeChat'][conversationID] == 'kms')):
                 conversationStatusList['WeChat'][conversationID] = 'agent'
                 response = '客服连接中，请稍后...\n输入【结束】将结束本次服务。'
                 t = Thread(target=utilities.forwardConversation,
-                           args=(
-                           'WeChat', 'agent', conversationID, messageID, fromUserName, toUserName, content, createdTime,
-                           response, str(datetime.fromtimestamp(wechat.message.time + 1).isoformat()) + 'Z'))
+                           args=['WeChat', 'agent', conversationID, messageID, fromUserName, toUserName, content, createdTime, response,
+                                 str(datetime.fromtimestamp(wechat.message.time + 1).isoformat()) + 'Z'])
                 t.start()
                 return wechat.response_text(response)
             # end of agent conversation
@@ -524,14 +482,12 @@ def wechatProcessRequest():
                 conversationStatusList['WeChat'][conversationID] = 'kms'
                 response = '本次服务结束，谢谢。'
                 t = Thread(target=utilities.forwardConversation,
-                           args=(
-                           'WeChat', 'kms', conversationID, messageID, fromUserName, toUserName, content, createdTime,
-                           response, str(datetime.fromtimestamp(wechat.message.time + 1).isoformat()) + 'Z'))
+                           args=('WeChat', 'kms', conversationID, messageID, fromUserName, toUserName, content, createdTime, response,
+                                 str(datetime.fromtimestamp(wechat.message.time + 1).isoformat()) + 'Z'))
                 t.start()
                 return wechat.response_text(response)
             # agent conversation
-            elif (conversationID in conversationStatusList['WeChat']) and conversationStatusList['WeChat'][
-                conversationID] == 'agent':
+            elif (conversationID in conversationStatusList['WeChat']) and conversationStatusList['WeChat'][conversationID] == 'agent':
                 t = Thread(target=utilities.forwardUserMessage,
                            args=('WeChat', 'agent', conversationID, messageID, fromUserName, toUserName, content,
                                  createdTime))
@@ -539,44 +495,31 @@ def wechatProcessRequest():
                 return wechat.response_none()
             else:
                 try:
-                    topTopics['WeChat'], response, status = utilities.AKRequest(content, topTopics['WeChat'],
-                                                                                languageCode_zh)
+                    topTopics['WeChat'], response, status = utilities.AKRequest(content, topTopics['WeChat'], languageCode_zh)
                     if status != '1':
                         if accountStatus[1]:
                             response += ' 我们会为您安排客服解答。'
                             conversationStatusList['WeChat'][conversationID] = 'agent'
                             t = Thread(target=utilities.forwardConversation,
-                                       args=('WeChat',
-                                             'agent', conversationID, messageID, fromUserName, toUserName, content,
-                                             createdTime,
-                                             response,
+                                       args=('WeChat', 'agent', conversationID, messageID, fromUserName, toUserName, content, createdTime, response,
                                              str(datetime.fromtimestamp(wechat.message.time + 1).isoformat()) + 'Z'))
                             t.start()
                         else:
                             if accountStatus[0]:
                                 response += ' 输入【求助】将为您安排客服。'
                             t = Thread(target=utilities.forwardConversation,
-                                       args=('WeChat',
-                                             'kms', conversationID, messageID, fromUserName, toUserName, content,
-                                             createdTime,
-                                             response,
+                                       args=('WeChat', 'kms', conversationID, messageID, fromUserName, toUserName, content, createdTime, response,
                                              str(datetime.fromtimestamp(wechat.message.time + 1).isoformat()) + 'Z'))
                             t.start()
                     else:
                         t = Thread(target=utilities.forwardConversation,
-                                   args=('WeChat',
-                                         'kms', conversationID, messageID, fromUserName, toUserName, content,
-                                         createdTime,
-                                         response,
+                                   args=('WeChat', 'kms', conversationID, messageID, fromUserName, toUserName, content, createdTime, response,
                                          str(datetime.fromtimestamp(wechat.message.time + 1).isoformat()) + 'Z'))
                         t.start()
                 except:
                     response = '无法连接数据服务器。 输入【求助】将为您安排客服。'
                     t = Thread(target=utilities.forwardConversation,
-                               args=('WeChat',
-                                     'kms', conversationID, messageID, fromUserName, toUserName, content,
-                                     createdTime,
-                                     response,
+                               args=('WeChat', 'kms', conversationID, messageID, fromUserName, toUserName, content, createdTime, response,
                                      str(datetime.fromtimestamp(wechat.message.time + 1).isoformat()) + 'Z'))
                     t.start()
                     return wechat.response_text(content=response)
