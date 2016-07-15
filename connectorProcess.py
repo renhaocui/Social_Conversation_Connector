@@ -66,24 +66,20 @@ def not_found(error):
 @app.route('/', methods=['GET'])
 def wechatServerVerifier():
     verification_token = 'astute_wechat_test'
-    print 'WeChat Server Verify Request Received'
     signature = request.args['signature']
     timestamp = request.args['timestamp']
     nonce = request.args['nonce']
     echostr = request.args['echostr']
     if (signature is None) or (timestamp is None) or (nonce is None) or (echostr is None):
-        print 'None parameters received from the request'
         return 'ERROR'
     if not signature or not timestamp or not nonce:
-        print 'Reject'
         return 'Error'
     tmp_list = [verification_token, timestamp, nonce]
     tmp_list.sort()
     tmp_str = ''.join(tmp_list)
     if signature != hashlib.sha1(tmp_str.encode('utf-8')).hexdigest():
-        print 'Reject'
         return 'Error'
-    print 'Accept'
+    print 'WeChat server verification: Accept'
     return make_response(echostr)
 
 
@@ -219,7 +215,22 @@ def messengerProcessRequest():
     global conversationStatusList
     global topTopics
     body = request.json
-    if 'message' in body['entry'][0]['messaging'][0]:
+    if 'postback' in body['entry'][0]['messaging'][0]:
+        sender = body['entry'][0]['messaging'][0]['sender']['id']
+        recipient = body['entry'][0]['messaging'][0]['recipient']['id']
+        payload = body['entry'][0]['messaging'][0]['postback']['payload']
+        statusCode = 500
+        if payload == 'home_page':
+            while statusCode != 200:
+                sendStatus, responseContent = utilities.sendMessengerHome(messengerTokenList[recipient], sender)
+                statusCode = sendStatus.status_code
+            print 'User [' + sender + '] request for home page. '
+        if payload == 'get_started':
+            sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender,
+                                                                  'Click the bars at the bottom left for the menu, or type in your query.')
+            print 'User [' + sender + '] get started.'
+
+    elif 'message' in body['entry'][0]['messaging'][0]:
         sender = body['entry'][0]['messaging'][0]['sender']['id']
         recipient = body['entry'][0]['messaging'][0]['recipient']['id']
         timestamp = body['entry'][0]['messaging'][0]['timestamp'] / 1000
@@ -261,43 +272,39 @@ def messengerProcessRequest():
             elif (conversationID in conversationStatusList['Facebook']) and conversationStatusList['Facebook'][conversationID] == 'agent':
                 utilities.forwardUserMessage('Facebook', 'agent', conversationID, messageID, sender, recipient, content, createdTime)
             else:
-                if content.lower() == 'home':
-                    print 'Home Page Sent to: '+str(recipient)
-                    sendStatus, responseContent = utilities.generateMessengerHome(messengerTokenList[recipient], sender)
-                else:
-                    try:
-                        topTopics['Facebook'], response, status = utilities.AKRequest(content, topTopics['Facebook'], languageCode_en)
-                        if status != '1':
-                            if accountStatus[1]:
-                                response += ' An agent will be with you shortly.'
-                                conversationStatusList['Facebook'][conversationID] = 'agent'
-                                sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
-                                if sendStatus.status_code == 200:
-                                    utilities.forwardConversation('Facebook', 'agent', conversationID, messageID, sender, recipient, content, createdTime, response,
-                                                                  str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
-                            else:
-                                if accountStatus[0]:
-                                    response += ' Type HELP for a real agent.'
-                                sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
-                                if sendStatus.status_code == 200:
-                                    utilities.forwardConversation('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime, response,
-                                                                  str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
+                try:
+                    topTopics['Facebook'], response, status = utilities.AKRequest(content, topTopics['Facebook'], languageCode_en)
+                    if status != '1':
+                        if accountStatus[1]:
+                            response += ' An agent will be with you shortly.'
+                            conversationStatusList['Facebook'][conversationID] = 'agent'
+                            sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
+                            if sendStatus.status_code == 200:
+                                utilities.forwardConversation('Facebook', 'agent', conversationID, messageID, sender, recipient, content, createdTime, response,
+                                                              str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
                         else:
-                            utilities.forwardUserMessage('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime)
-                            contentList = utilities.splitMessage(response, 320)
-                            for content in contentList:
-                                sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, content)
-                                if sendStatus.status_code == 200:
-                                    utilities.forwardAKMessage('Facebook', 'kms', conversationID, responseContent['message_id'], recipient, sender, content,
-                                                               str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z')
-                    except Exception as e:
-                        print e
-                        response = 'Cannot connect to Astute Knowledge Server. Type HELP for a real agent.'
-                        sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
-                        if sendStatus.status_code == 200:
-                            utilities.forwardConversation('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime, response,
-                                                          str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
-                        return '', 200
+                            if accountStatus[0]:
+                                response += ' Type HELP for a real agent.'
+                            sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
+                            if sendStatus.status_code == 200:
+                                utilities.forwardConversation('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime, response,
+                                                              str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
+                    else:
+                        utilities.forwardUserMessage('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime)
+                        contentList = utilities.splitMessage(response, 320)
+                        for content in contentList:
+                            sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, content)
+                            if sendStatus.status_code == 200:
+                                utilities.forwardAKMessage('Facebook', 'kms', conversationID, responseContent['message_id'], recipient, sender, content,
+                                                           str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z')
+                except Exception as e:
+                    print e
+                    response = 'Cannot connect to Astute Knowledge Server. Type HELP for a real agent.'
+                    sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
+                    if sendStatus.status_code == 200:
+                        utilities.forwardConversation('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime, response,
+                                                      str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
+                    return '', 200
         else:
             print 'Chinese Session'
             # start of agent conversation

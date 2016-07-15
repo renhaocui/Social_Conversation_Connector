@@ -2,18 +2,72 @@
 import requests
 import json
 
-token = 'astute_wechat_test'
-appid = 'wxc6587a03db4b22c6'
-appsecret = 'fabd27f90c9a57b375723cb0f796563a'
+messengerThreadUrl = "https://graph.facebook.com/v2.6/me/thread_settings?access_token="
+
+def setMessengerGetStarted(token):
+    threadSettingURL = messengerThreadUrl + token
+    data = {
+        "setting_type": "call_to_actions",
+        "thread_state": "new_thread",
+        "call_to_actions": [
+            {
+                "payload": "get_started"
+            }
+        ]
+    }
+    response = requests.post(threadSettingURL, json=data, verify=False)
+
+    return response, json.loads(response.text)
 
 
-def getAccessToken():
+def setMessengerGreeting(token):
+    threadSettingURL = messengerThreadUrl + token
+    data = {
+        "setting_type": "greeting",
+        "greeting": {
+            "text": "Welcome!"
+        }
+    }
+    response = requests.post(threadSettingURL, json=data, verify=False)
+
+    return response, json.loads(response.text)
+
+
+def setMessengerMenu(token):
+    threadSettingURL = messengerThreadUrl + token
+    data = {
+        "setting_type": "call_to_actions",
+        "thread_state": "existing_thread",
+        "call_to_actions": [
+            {
+                "type": "postback",
+                "title": "Home",
+                "payload": "home_page"
+            },
+            {
+                "type": "web_url",
+                "title": "Guides",
+                "url": "https://dl.dropboxusercontent.com/u/93550717/site/GuidesHome.html"
+            },
+            {
+                "type": "web_url",
+                "title": "Roadside",
+                "url": "https://dl.dropboxusercontent.com/u/93550717/site/test2.html"
+            }
+        ]
+    }
+    response = requests.post(threadSettingURL, json=data, verify=False)
+
+    return response, json.loads(response.text)
+
+
+def getWeChatAccessToken(appid, appsecret):
     url = 'https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=' + appid + '&secret=' + appsecret
     response = json.loads(requests.get(url, verify=False).content)
     return response['access_token']
 
 
-def createMenu(accessToken):
+def setWeChatMenu(accessToken):
     url = 'https://api.weixin.qq.com/cgi-bin/menu/create?access_token=' + accessToken
     menu_data = {'button': [{'type': 'click', 'name': 'Home', 'key': 'home_box'},
                             {'type': 'view', 'name': 'Guides',
@@ -25,5 +79,12 @@ def createMenu(accessToken):
 
 
 if __name__ == "__main__":
-    accessToken = getAccessToken()
-    print createMenu(accessToken)
+    appid = 'wxc6587a03db4b22c6'
+    appsecret = 'fabd27f90c9a57b375723cb0f796563a'
+    messenger_token = 'EAAB1kFElgToBAHRJmoshPkpQzpEF2FviWyY9GdA5lUZBPwqRVb3tQdz9vlOkkLZBpp0nihxN5yyBJxDEZC3nTROBaosUYhiMWwwPcqUJiFEZA6lqQwcFHwfpWYZB8d7v5OsaZB2YDgLqRmpdNxvHy7s4pPiuPe8xK1MhFdgoRimgZDZD'
+
+    #accessToken = getAccessToken(appid, appsecret)
+    #print setWeChatMenu(getWeChatAccessToken(appid, appsecret))
+    print setMessengerMenu(messenger_token)
+    print setMessengerGreeting(messenger_token)
+    print setMessengerGetStarted(messenger_token)

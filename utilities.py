@@ -5,10 +5,10 @@ import json
 
 socialServiceURL = 'https://api.astutesocial.com/v1/conversation/message'
 socialToken = 'RsvANwIcSlIIeimtvc65cQ=='
+messengerThreadUrl = 'https://graph.facebook.com/v2.6/me/messages?access_token='
 
-
-def generateMessengerHome(token, recipient, lang='en'):
-    messengerSendURL = 'https://graph.facebook.com/v2.6/me/messages?access_token=' + token
+def sendMessengerHome(token, recipient, lang='en'):
+    messengerSendURL = messengerThreadUrl + token
     data = {
         "recipient": {
             "id": recipient
@@ -26,11 +26,6 @@ def generateMessengerHome(token, recipient, lang='en'):
                             "buttons": [
                                 {
                                     "type": "web_url",
-                                    "url": "https://www.fordpass.com",
-                                    "title": "More Details"
-                                },
-                                {
-                                    "type": "web_url",
                                     "title": "My Vehicles",
                                     "url": "https://dl.dropboxusercontent.com/u/93550717/site/test1.html"
                                 },
@@ -39,27 +34,10 @@ def generateMessengerHome(token, recipient, lang='en'):
                                     "title": "My Dealer",
                                     "url": "https://dl.dropboxusercontent.com/u/93550717/site/test1.html"
                                 },
-                            ]
-                        },
-                        {
-                            "title": "FordPass",
-                            "image_url": "https://dl.dropboxusercontent.com/u/93550717/site/fordpasslogo.png",
-                            "subtitle": "Making your journey easier, propels us further.",
-                            "buttons": [
                                 {
                                     "type": "web_url",
                                     "url": "https://www.bing.com/mapspreview",
-                                    "title": "Parking"
-                                },
-                                {
-                                    "type": "web_url",
-                                    "url": "https://dl.dropboxusercontent.com/u/93550717/site/GuidesHome.html",
-                                    "title": "Guides"
-                                },
-                                {
-                                    "type": "web_url",
-                                    "url": "https://dl.dropboxusercontent.com/u/93550717/site/test2.html",
-                                    "title": "Roadside Assistance"
+                                    "title": "Park"
                                 }
                             ]
                         }
@@ -156,7 +134,7 @@ def splitMessage(inputMsg, limit):
 
 
 def sendMessenger(token, recipient, content):
-    messengerSendURL = 'https://graph.facebook.com/v2.6/me/messages?access_token=' + token
+    messengerSendURL = messengerThreadUrl + token
     data = {'recipient': {'id': recipient}, 'message': {'text': content}}
 
     response = requests.post(messengerSendURL, json=data, verify=False)
@@ -182,7 +160,8 @@ def forwardAKMessage(platform, conversationStatus, conversationID, messageID, fr
             'to_id': toUserName, 'content': content, 'content_type': 'text', 'created_time': createdTime}
 
     response = requests.post(socialServiceURL, json=data, verify=False)
-
+    print 'Forward knowledge message to Social ' + str(response
+                                                       )
     return response
 
 
@@ -206,6 +185,6 @@ def forwardConversation(platform, conversationStatus, conversationID, messageID,
 
 
 #token = 'EAAB1kFElgToBAHRJmoshPkpQzpEF2FviWyY9GdA5lUZBPwqRVb3tQdz9vlOkkLZBpp0nihxN5yyBJxDEZC3nTROBaosUYhiMWwwPcqUJiFEZA6lqQwcFHwfpWYZB8d7v5OsaZB2YDgLqRmpdNxvHy7s4pPiuPe8xK1MhFdgoRimgZDZD'
-# status, response = sendMessenger(token, '1131072490299142', generateMessengerHome())
+#recipient = '1131072490299142'
+# status, response = sendMessenger(token, recipient, generateMessengerHome())
 #print generateMessengerHome(token, '1131072490299142', lang='en')
-# print json.loads(response)['message_id']
