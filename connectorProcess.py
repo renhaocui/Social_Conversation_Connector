@@ -215,20 +215,23 @@ def messengerProcessRequest():
     global conversationStatusList
     global topTopics
     body = request.json
+    #print body
     if 'postback' in body['entry'][0]['messaging'][0]:
         sender = body['entry'][0]['messaging'][0]['sender']['id']
         recipient = body['entry'][0]['messaging'][0]['recipient']['id']
         payload = body['entry'][0]['messaging'][0]['postback']['payload']
         statusCode = 500
         if payload == 'home_page':
-            while statusCode != 200:
+            index = 0
+            while statusCode != 200 and index < 10:
                 sendStatus, responseContent = utilities.sendMessengerHome(messengerTokenList[recipient], sender)
                 statusCode = sendStatus.status_code
-            print 'User [' + sender + '] request for home page. '
-        if payload == 'get_started':
+                index += 1
+            print 'User [' + sender + '] request for home page. '+str(sendStatus)
+        elif payload == 'get_started':
             sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender,
-                                                                  'Click the bars at the bottom left for the menu, or type in your query.')
-            print 'User [' + sender + '] get started.'
+                                                                  'Welcome! Click the bars at the bottom left for the menu, or type in your query.')
+            print 'User [' + sender + '] get started.'+str(sendStatus)
 
     elif 'message' in body['entry'][0]['messaging'][0]:
         sender = body['entry'][0]['messaging'][0]['sender']['id']

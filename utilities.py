@@ -5,7 +5,7 @@ import json
 
 socialServiceURL = 'https://api.astutesocial.com/v1/conversation/message'
 socialToken = 'RsvANwIcSlIIeimtvc65cQ=='
-messengerThreadUrl = 'https://graph.facebook.com/v2.6/me/messages?access_token='
+messengerThreadUrl = "https://graph.facebook.com/v2.6/me/messages?access_token="
 
 def sendMessengerHome(token, recipient, lang='en'):
     messengerSendURL = messengerThreadUrl + token
@@ -27,7 +27,7 @@ def sendMessengerHome(token, recipient, lang='en'):
                                 {
                                     "type": "web_url",
                                     "title": "My Vehicles",
-                                    "url": "https://dl.dropboxusercontent.com/u/93550717/site/test1.html"
+                                    "url": "https://dl.dropboxusercontent.com/u/93550717/site/test.html"
                                 },
                                 {
                                     "type": "web_url",
@@ -185,6 +185,6 @@ def forwardConversation(platform, conversationStatus, conversationID, messageID,
 
 
 #token = 'EAAB1kFElgToBAHRJmoshPkpQzpEF2FviWyY9GdA5lUZBPwqRVb3tQdz9vlOkkLZBpp0nihxN5yyBJxDEZC3nTROBaosUYhiMWwwPcqUJiFEZA6lqQwcFHwfpWYZB8d7v5OsaZB2YDgLqRmpdNxvHy7s4pPiuPe8xK1MhFdgoRimgZDZD'
-#recipient = '1131072490299142'
-# status, response = sendMessenger(token, recipient, generateMessengerHome())
-#print generateMessengerHome(token, '1131072490299142', lang='en')
+#recipient = "1131072490299142"
+#print sendMessenger(token, recipient, 'test')
+#print sendMessengerHome(token, recipient, lang='en')

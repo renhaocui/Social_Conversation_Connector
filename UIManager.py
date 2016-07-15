@@ -4,6 +4,7 @@ import json
 
 messengerThreadUrl = "https://graph.facebook.com/v2.6/me/thread_settings?access_token="
 
+
 def setMessengerGetStarted(token):
     threadSettingURL = messengerThreadUrl + token
     data = {
@@ -83,8 +84,9 @@ if __name__ == "__main__":
     appsecret = 'fabd27f90c9a57b375723cb0f796563a'
     messenger_token = 'EAAB1kFElgToBAHRJmoshPkpQzpEF2FviWyY9GdA5lUZBPwqRVb3tQdz9vlOkkLZBpp0nihxN5yyBJxDEZC3nTROBaosUYhiMWwwPcqUJiFEZA6lqQwcFHwfpWYZB8d7v5OsaZB2YDgLqRmpdNxvHy7s4pPiuPe8xK1MhFdgoRimgZDZD'
 
-    #accessToken = getAccessToken(appid, appsecret)
-    #print setWeChatMenu(getWeChatAccessToken(appid, appsecret))
-    print setMessengerMenu(messenger_token)
-    print setMessengerGreeting(messenger_token)
-    print setMessengerGetStarted(messenger_token)
+    # accessToken = getAccessToken(appid, appsecret)
+    # print setWeChatMenu(getWeChatAccessToken(appid, appsecret))
+    #print setMessengerMenu(messenger_token)
+    #print setMessengerGreeting(messenger_token)
+    #print setMessengerGetStarted(messenger_token)
+
