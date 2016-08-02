@@ -4,14 +4,17 @@ from bs4 import BeautifulSoup
 import HTMLParser
 
 
-#uri = 'http://rdqa.myastutesolutions.com/RDWeb/RDService/RealDialog.wsdl'
-uri = 'https://rdservice.astuteknowledge.com/FederatedSOAP/RDService/RealDialog.wsdl'
+uri = 'http://rdqa.myastutesolutions.com/RDWeb/RDService/RealDialog.wsdl'
+#uri = 'https://rdservice.astuteknowledge.com/FederatedSOAP/RDService/RealDialog.wsdl'
 #secretKey = 'y1lrpcka'
-secretKey = 't5gn26E1GGUVbvemQeT6dG9n'
+#secretKey = 't5gn26E1GGUVbvemQeT6dG9n'
+secretKey = 'n24xmbbb'
 #kbName = 'WeChat'
-kbName = 'FordPassMobile'
+#kbName = 'FordPassMobile'
+kbName = 'Ford Global'
 #touchpoint = 'default'
-touchpoint = '*'
+#touchpoint = '*'
+touchpoint = 'Public'
 topicContext = 'all'
 
 client = Client(uri, retxml=True)
@@ -36,7 +39,7 @@ def topTopics(sessionID, languageCode):
             out = 'No top topics'
         else:
             out = u'没有热门话题'
-    return out, '1'
+    return out.encode('utf-8'), '1'
 
 def autoComplete(sessionID):
     autoComplete = client.service.GetAutoComplete(SessionID=sessionID, Utterance='how', SecretKey=secretKey)
@@ -67,7 +70,7 @@ def getAnswer(sessionID, question, languageCode):
         else:
             response = u'对不起，我找不到适合的答案'
         print 'no matched question'
-    return response, status
+    return response.encode('utf-8'), status
 
 
 def destSession(sessionID):
@@ -81,7 +84,7 @@ def destSession(sessionID):
     return result
 
 
-#sessionID = iniSession(languageCode='zh')
-#print getAnswer(sessionID, 'Remote Start with FordPass App', 'en-US')
-#print topTopics(sessionID, 'en-US')
+#sessionID = iniSession(languageCode='zh-CN')
+#print getAnswer(sessionID, '经销商', 'zh-CN')
+#print topTopics(sessionID, 'zh-CN')
 #destSession(sessionID)

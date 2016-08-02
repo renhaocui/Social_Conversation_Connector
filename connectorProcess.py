@@ -35,7 +35,7 @@ accountStatusList = {'WeChat': {'gh_ae02c9f6f14e': (True, False)},
                      'Facebook': {'129262697152826': (True, False)}}  # (on_help, on_kms_failure)
 
 languageCode_en = 'en-US'
-languageCode_zh = 'zh'
+languageCode_zh = 'zh-CN'
 identifier = LanguageIdentifier.from_modelstring(model, norm_probs=True)
 
 token = 'EAAB1kFElgToBAHRJmoshPkpQzpEF2FviWyY9GdA5lUZBPwqRVb3tQdz9vlOkkLZBpp0nihxN5yyBJxDEZC3nTROBaosUYhiMWwwPcqUJiFEZA6lqQwcFHwfpWYZB8d7v5OsaZB2YDgLqRmpdNxvHy7s4pPiuPe8xK1MhFdgoRimgZDZD'
@@ -402,7 +402,8 @@ def wechatProcessRequest():
     elif wechat.message.type == 'click':
         eventKey = wechat.message.key
         if eventKey == 'home_box':
-            userLang = wechat.get_user_info(user_id=fromUserName, lang='en')['language']
+            #userLang = wechat.get_user_info(user_id=fromUserName, lang='en')['language']
+            userLang = 'zh'
             richResponse = utilities.generateWeChatHome(lang=userLang)
             return wechat.response_news(richResponse)
     elif wechat.message.type == 'text':

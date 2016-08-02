@@ -79,6 +79,7 @@ def generateWeChatHome(lang='en'):
             'url': 'https://www.bing.com/mapspreview'}
     if lang != 'en':
         temp['title'] = u'停车'
+        #temp['url'] = 'https://www.gaode.com/'
     outputList.append(temp)
 
     return outputList

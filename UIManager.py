@@ -68,14 +68,21 @@ def getWeChatAccessToken(appid, appsecret):
     return response['access_token']
 
 
-def setWeChatMenu(accessToken):
+def setWeChatMenu(accessToken, lang):
     url = 'https://api.weixin.qq.com/cgi-bin/menu/create?access_token=' + accessToken
-    menu_data = {'button': [{'type': 'click', 'name': 'Home', 'key': 'home_box'},
+    if lang == 'en':
+        menu_data = {'button': [{'type': 'click', 'name': 'Home', 'key': 'home_box'},
                             {'type': 'view', 'name': 'Guides',
                              'url': 'https://dl.dropboxusercontent.com/u/93550717/site/GuidesHome.html'},
                             {'type': 'view', 'name': 'Roadside',
                              'url': 'https://dl.dropboxusercontent.com/u/93550717/site/test2.html'}]}
-    response = requests.post(url, json=menu_data, verify=False).content
+    else:
+        menu_data = {'button': [{'type': 'click', 'name': "主页", 'key': 'home_box'},
+                            {'type': 'view', 'name': "目录",
+                             'url': 'https://dl.dropboxusercontent.com/u/93550717/site/GuidesHome.html'},
+                            {'type': 'view', 'name': "道路救援",
+                             'url': 'https://dl.dropboxusercontent.com/u/93550717/site/test2.html'}]}
+    response = requests.post(url, data=json.dumps(menu_data, ensure_ascii=False), verify=False).content
     return response
 
 
@@ -84,8 +91,8 @@ if __name__ == "__main__":
     appsecret = 'fabd27f90c9a57b375723cb0f796563a'
     messenger_token = 'EAAB1kFElgToBAHRJmoshPkpQzpEF2FviWyY9GdA5lUZBPwqRVb3tQdz9vlOkkLZBpp0nihxN5yyBJxDEZC3nTROBaosUYhiMWwwPcqUJiFEZA6lqQwcFHwfpWYZB8d7v5OsaZB2YDgLqRmpdNxvHy7s4pPiuPe8xK1MhFdgoRimgZDZD'
 
-    # accessToken = getAccessToken(appid, appsecret)
-    # print setWeChatMenu(getWeChatAccessToken(appid, appsecret))
+    accessToken = getWeChatAccessToken(appid, appsecret)
+    print setWeChatMenu(accessToken, 'zh')
     #print setMessengerMenu(messenger_token)
     #print setMessengerGreeting(messenger_token)
     #print setMessengerGetStarted(messenger_token)
