@@ -98,9 +98,10 @@ def AKRequest(content, topTopics, languageCode):
         sessionID = AKDialog.iniSession(languageCode=languageCode)
         if content.lower() == 'top topics':
             response, status = AKDialog.topTopics(sessionID, languageCode)
-            topTopics = storeTopics(response)
-        elif content.isdigit() and len(topTopics) > 0 and content.strip() in topTopics:
-            content = topTopics[content.strip()]
+            topTopics['topics'] = storeTopics(response)
+            topTopics['lang'] = languageCode
+        elif content.isdigit() and len(topTopics['topics']) > 0 and content.strip() in topTopics['topics']:
+            content = topTopics['topics'][content.strip()]
             response, status = AKDialog.getAnswer(sessionID, content, languageCode)
         else:
             response, status = AKDialog.getAnswer(sessionID, content, languageCode)
@@ -108,9 +109,10 @@ def AKRequest(content, topTopics, languageCode):
         sessionID = AKDialog.iniSession(languageCode=languageCode)
         if unicode(content) == u'热门话题':
             response, status = AKDialog.topTopics(sessionID, languageCode)
-            topTopics = storeTopics(response)
-        elif content.isdigit() and len(topTopics) > 0 and content.strip() in topTopics:
-            content = topTopics[content.strip()]
+            topTopics['topics'] = storeTopics(response)
+            topTopics['lang'] = languageCode
+        elif content.isdigit() and len(topTopics['topics']) > 0 and content.strip() in topTopics['topics']:
+            content = unicode(topTopics['topics'][content.strip()], 'utf-8')
             response, status = AKDialog.getAnswer(sessionID, content, languageCode)
         else:
             response, status = AKDialog.getAnswer(sessionID, content, languageCode)

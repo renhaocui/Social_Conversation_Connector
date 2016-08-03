@@ -85,6 +85,7 @@ def destSession(sessionID):
 
 
 #sessionID = iniSession(languageCode='zh-CN')
-#print getAnswer(sessionID, '经销商', 'zh-CN')
+#response, status = getAnswer(sessionID, u'涉及事故或电动混合动力动力电动汽车', 'zh-CN')
+#print response
 #print topTopics(sessionID, 'zh-CN')
 #destSession(sessionID)

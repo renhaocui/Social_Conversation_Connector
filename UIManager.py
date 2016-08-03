@@ -92,7 +92,7 @@ if __name__ == "__main__":
     messenger_token = 'EAAB1kFElgToBAHRJmoshPkpQzpEF2FviWyY9GdA5lUZBPwqRVb3tQdz9vlOkkLZBpp0nihxN5yyBJxDEZC3nTROBaosUYhiMWwwPcqUJiFEZA6lqQwcFHwfpWYZB8d7v5OsaZB2YDgLqRmpdNxvHy7s4pPiuPe8xK1MhFdgoRimgZDZD'
 
     accessToken = getWeChatAccessToken(appid, appsecret)
-    print setWeChatMenu(accessToken, 'zh')
+    print setWeChatMenu(accessToken, 'en')
     #print setMessengerMenu(messenger_token)
     #print setMessengerGreeting(messenger_token)
     #print setMessengerGetStarted(messenger_token)

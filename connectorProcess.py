@@ -27,7 +27,7 @@ confList = {'gh_ae02c9f6f14e': tempConf}
 global conversationStatusList
 conversationStatusList = {'WeChat': {}, 'Facebook': {}}
 global topTopics
-topTopics = {'WeChat': {}, 'Facebook': {}}
+topTopics = {'WeChat': {'lang': 'en', 'topics': {}}, 'Facebook': {'lang': 'en', 'topics': {}}}
 global wechatList
 wechatList = {'gh_ae02c9f6f14e': tempWechat}
 global accountStatusList
@@ -176,6 +176,7 @@ def sendMessage():
                 for content in contentList:
                     try:
                         sendStatus, responseContent = utilities.sendMessenger(access_token, userID, content)
+                        print sendStatus
                         if sendStatus.status_code != 200:
                             status = False
                         else:
@@ -209,13 +210,22 @@ def setAccountStatus():
     return '', 200
 
 
+def sendWechatResponse(weChat, response, conversationID, messageID, fromUserName, toUserName):
+    responseList = utilities.splitMessage(response, 2000)
+    for response in responseList:
+        weChat.send_text_message(user_id=fromUserName, content=response)
+        utilities.forwardAKMessage('WeChat', 'kms', conversationID, messageID, toUserName, fromUserName, response,
+                                   str(datetime.fromtimestamp(weChat.message.time + 1).isoformat()) + 'Z')
+    return True
+
+
 @app.route('/FBmessenger', methods=['POST'])
 def messengerProcessRequest():
     global accountStatusList
     global conversationStatusList
     global topTopics
     body = request.json
-    #print body
+    # print body
     if 'postback' in body['entry'][0]['messaging'][0]:
         sender = body['entry'][0]['messaging'][0]['sender']['id']
         recipient = body['entry'][0]['messaging'][0]['recipient']['id']
@@ -227,11 +237,11 @@ def messengerProcessRequest():
                 sendStatus, responseContent = utilities.sendMessengerHome(messengerTokenList[recipient], sender)
                 statusCode = sendStatus.status_code
                 index += 1
-            print 'User [' + sender + '] request for home page. '+str(sendStatus)
+            print 'User [' + sender + '] request for home page. ' + str(sendStatus)
         elif payload == 'get_started':
             sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender,
                                                                   'Welcome! Click the bars at the bottom left for the menu, or type in your query.')
-            print 'User [' + sender + '] get started.'+str(sendStatus)
+            print 'User [' + sender + '] get started.' + str(sendStatus)
 
     elif 'message' in body['entry'][0]['messaging'][0]:
         sender = body['entry'][0]['messaging'][0]['sender']['id']
@@ -250,7 +260,10 @@ def messengerProcessRequest():
         createdTime = str(datetime.fromtimestamp(timestamp).isoformat()) + 'Z'
         msgLang = identifier.classify(content)[0]
 
-        if msgLang != 'zh':
+        if content.isdigit() and len(topTopics['Facebook']['topics']) > 0:
+            msgLang = topTopics['Facebook']['lang']
+            print 'aaaaaaaaa ' + msgLang
+        if 'zh' not in msgLang:
             print 'English Session'
             # start of agent conversation
             if content.lower() == 'help' and accountStatus[0] and (
@@ -402,8 +415,8 @@ def wechatProcessRequest():
     elif wechat.message.type == 'click':
         eventKey = wechat.message.key
         if eventKey == 'home_box':
-            #userLang = wechat.get_user_info(user_id=fromUserName, lang='en')['language']
-            userLang = 'zh'
+            userLang = wechat.get_user_info(user_id=fromUserName, lang='en')['language']
+            # userLang = 'zh'
             richResponse = utilities.generateWeChatHome(lang=userLang)
             return wechat.response_news(richResponse)
     elif wechat.message.type == 'text':
@@ -413,9 +426,13 @@ def wechatProcessRequest():
         try:
             content = wechat.message.content
         except:
-            return wechat.response_text(content='Sorry, I cannot understand you. Please try again.')
-        msgLang = identifier.classify(content)[0]
-        if msgLang != 'zh':
+            return wechat.response_text(content='Sorry, I cannot understand you. Please try again.\n对不起，我无法理解您的意思，请再试一次。')
+
+        if content.isdigit() and len(topTopics['WeChat']['topics']) > 0:
+            msgLang = topTopics['WeChat']['lang']
+        else:
+            msgLang = identifier.classify(content)[0]
+        if 'zh' not in msgLang.lower():
             print 'English Session'
             # start of agent conversation
             if content.lower() == 'help' and accountStatus[0] and (
@@ -445,7 +462,7 @@ def wechatProcessRequest():
                            args=('WeChat', 'agent', conversationID, messageID, fromUserName, toUserName, content, createdTime))
                 t.start()
                 return wechat.response_none()
-            else:
+            else:  # AK bot
                 try:
                     topTopics['WeChat'], response, status = utilities.AKRequest(content, topTopics['WeChat'], languageCode_en)
                     if status != '1':
@@ -464,10 +481,12 @@ def wechatProcessRequest():
                                              str(datetime.fromtimestamp(wechat.message.time + 1).isoformat()) + 'Z'))
                             t.start()
                     else:
-                        t = Thread(target=utilities.forwardConversation,
-                                   args=('WeChat', 'kms', conversationID, messageID, fromUserName, toUserName, content, createdTime, response,
-                                         str(datetime.fromtimestamp(wechat.message.time + 1).isoformat()) + 'Z'))
+                        utilities.forwardUserMessage('WeChat', 'kms', conversationID, messageID, fromUserName, toUserName, content, createdTime)
+                        t = Thread(target=sendWechatResponse,
+                                   args=(wechat, response, conversationID, messageID, fromUserName, toUserName)
+                                   )
                         t.start()
+                        return wechat.response_none()
                 except Exception as e:
                     print e
                     response = 'Cannot connect to Astute Knowledge Server. Type HELP for a real agent.'
@@ -527,10 +546,12 @@ def wechatProcessRequest():
                                              str(datetime.fromtimestamp(wechat.message.time + 1).isoformat()) + 'Z'))
                             t.start()
                     else:
-                        t = Thread(target=utilities.forwardConversation,
-                                   args=('WeChat', 'kms', conversationID, messageID, fromUserName, toUserName, content, createdTime, response,
-                                         str(datetime.fromtimestamp(wechat.message.time + 1).isoformat()) + 'Z'))
+                        utilities.forwardUserMessage('WeChat', 'kms', conversationID, messageID, fromUserName, toUserName, content, createdTime)
+                        t = Thread(target=sendWechatResponse,
+                                   args=(wechat, response, conversationID, messageID, fromUserName, toUserName)
+                                   )
                         t.start()
+                        return wechat.response_none()
                 except:
                     response = '无法连接数据服务器。 输入【求助】将为您安排客服。'
                     t = Thread(target=utilities.forwardConversation,
