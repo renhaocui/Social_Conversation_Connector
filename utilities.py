@@ -63,21 +63,23 @@ def generateWeChatHome(lang='en'):
     temp = {'title': 'My Vehicles', 'description': 'my vehicles',
             'picurl': 'https://dl.dropboxusercontent.com/u/93550717/site/myvehicles.png',
             'url': 'https://dl.dropboxusercontent.com/u/93550717/site/test.html'}
-    if lang != 'en':
+    if 'en' not in lang:
         temp['title'] = u'我的车辆'
+        temp['url'] = 'https://dl.dropboxusercontent.com/u/93550717/site copy/test.html'
     outputList.append(temp)
 
     temp = {'title': 'My Dealer', 'description': 'dealer',
             'picurl': 'https://dl.dropboxusercontent.com/u/93550717/site/mydealer.png',
             'url': 'https://dl.dropboxusercontent.com/u/93550717/site/test1.html'}
-    if lang != 'en':
+    if 'en' not in lang:
         temp['title'] = u'经销商'
+        temp['url'] = 'https://dl.dropboxusercontent.com/u/93550717/site copy/test1.html'
     outputList.append(temp)
 
     temp = {'title': 'Park', 'description': 'parking',
             'picurl': 'https://dl.dropboxusercontent.com/u/93550717/site/park.png',
             'url': 'https://www.bing.com/mapspreview'}
-    if lang != 'en':
+    if 'en' not in lang:
         temp['title'] = u'停车'
         #temp['url'] = 'https://www.gaode.com/'
     outputList.append(temp)
@@ -112,11 +114,11 @@ def AKRequest(content, topTopics, languageCode):
             topTopics['topics'] = storeTopics(response)
             topTopics['lang'] = languageCode
         elif content.isdigit() and len(topTopics['topics']) > 0 and content.strip() in topTopics['topics']:
-            content = unicode(topTopics['topics'][content.strip()], 'utf-8')
+            content = topTopics['topics'][content.strip()]
             response, status = AKDialog.getAnswer(sessionID, content, languageCode)
         else:
             response, status = AKDialog.getAnswer(sessionID, content, languageCode)
-    return topTopics, str(response), status
+    return topTopics, response, status
 
 
 def generateConversationID(toUserName, fromUserName):
@@ -139,8 +141,8 @@ def splitMessage(inputMsg, limit):
 def sendMessenger(token, recipient, content):
     messengerSendURL = messengerThreadUrl + token
     data = {'recipient': {'id': recipient}, 'message': {'text': content}}
-
     response = requests.post(messengerSendURL, json=data, verify=False)
+
     return response, json.loads(response.text)
 
 
@@ -149,40 +151,28 @@ def forwardUserMessage(platform, conversationStatus, conversationID, messageID, 
     data = {'access_token': socialToken, 'platform': platform, 'conversation_status': conversationStatus,
             'conversation_service_id': conversationID, 'from_id': fromUserName, 'service_id': messageID,
             'to_id': toUserName, 'content': content, 'content_type': 'text', 'created_time': createdTime}
-
     response = requests.post(socialServiceURL, json=data, verify=False)
     print 'Forward user messages to Social ' + str(response)
-
     return response
 
 
 def forwardAKMessage(platform, conversationStatus, conversationID, messageID, fromUserName, toUserName, content,
                      createdTime):
+    print content + ': ' + str(type(content))
     data = {'access_token': socialToken, 'platform': platform, 'conversation_status': conversationStatus,
             'conversation_service_id': conversationID, 'from_id': fromUserName, 'service_id': messageID,
             'to_id': toUserName, 'content': content, 'content_type': 'text', 'created_time': createdTime}
-
+    #print data['content']
     response = requests.post(socialServiceURL, json=data, verify=False)
-    print 'Forward knowledge message to Social ' + str(response
-                                                       )
+    print 'Forward knowledge message to Social ' + str(response)
     return response
 
 
 def forwardConversation(platform, conversationStatus, conversationID, messageID, fromUserName, toUserName, content,
                         createdTime1, answer, createdTime2, mid=''):
-    data1 = {'access_token': socialToken, 'platform': platform, 'conversation_status': conversationStatus,
-             'conversation_service_id': conversationID, 'from_id': fromUserName, 'service_id': messageID,
-             'to_id': toUserName, 'content': content, 'content_type': 'text', 'created_time': createdTime1}
 
-    response1 = requests.post(socialServiceURL, json=data1, verify=False)
-    print 'Forward user messages to Social ' + str(response1)
-
-    data2 = {'access_token': socialToken, 'platform': platform, 'conversation_status': conversationStatus,
-             'conversation_service_id': conversationID, 'from_id': toUserName, 'service_id': mid,
-             'to_id': fromUserName, 'content': answer, 'content_type': 'text', 'created_time': createdTime2}
-
-    response2 = requests.post(socialServiceURL, json=data2, verify=False)
-    print 'Forward knowledge messages to Social ' + str(response2)
+    response1 = forwardUserMessage(platform, conversationStatus, conversationID, messageID, fromUserName, toUserName, content, createdTime1)
+    response2 = forwardAKMessage(platform, conversationStatus, conversationID, mid, toUserName, fromUserName, answer, createdTime2)
 
     return response1, response2
 

@@ -79,9 +79,9 @@ def setWeChatMenu(accessToken, lang):
     else:
         menu_data = {'button': [{'type': 'click', 'name': "主页", 'key': 'home_box'},
                             {'type': 'view', 'name': "目录",
-                             'url': 'https://dl.dropboxusercontent.com/u/93550717/site/GuidesHome.html'},
+                             'url': 'https://dl.dropboxusercontent.com/u/93550717/site copy/GuidesHome.html'},
                             {'type': 'view', 'name': "道路救援",
-                             'url': 'https://dl.dropboxusercontent.com/u/93550717/site/test2.html'}]}
+                             'url': 'https://dl.dropboxusercontent.com/u/93550717/site copy/test2.html'}]}
     response = requests.post(url, data=json.dumps(menu_data, ensure_ascii=False), verify=False).content
     return response
 
@@ -92,7 +92,7 @@ if __name__ == "__main__":
     messenger_token = 'EAAB1kFElgToBAHRJmoshPkpQzpEF2FviWyY9GdA5lUZBPwqRVb3tQdz9vlOkkLZBpp0nihxN5yyBJxDEZC3nTROBaosUYhiMWwwPcqUJiFEZA6lqQwcFHwfpWYZB8d7v5OsaZB2YDgLqRmpdNxvHy7s4pPiuPe8xK1MhFdgoRimgZDZD'
 
     accessToken = getWeChatAccessToken(appid, appsecret)
-    print setWeChatMenu(accessToken, 'en')
+    print setWeChatMenu(accessToken, 'zh')
     #print setMessengerMenu(messenger_token)
     #print setMessengerGreeting(messenger_token)
     #print setMessengerGetStarted(messenger_token)

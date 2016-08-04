@@ -3,7 +3,6 @@ from suds.client import Client
 from bs4 import BeautifulSoup
 import HTMLParser
 
-
 uri = 'http://rdqa.myastutesolutions.com/RDWeb/RDService/RealDialog.wsdl'
 #uri = 'https://rdservice.astuteknowledge.com/FederatedSOAP/RDService/RealDialog.wsdl'
 #secretKey = 'y1lrpcka'
@@ -38,8 +37,8 @@ def topTopics(sessionID, languageCode):
         if 'en' in languageCode:
             out = 'No top topics'
         else:
-            out = u'没有热门话题'
-    return out.encode('utf-8'), '1'
+            out = '没有热门话题'
+    return out, '1'
 
 def autoComplete(sessionID):
     autoComplete = client.service.GetAutoComplete(SessionID=sessionID, Utterance='how', SecretKey=secretKey)
@@ -57,7 +56,6 @@ def getAnswer(sessionID, question, languageCode):
     response = client.service.GetDialogResponse(SessionID=sessionID, RequestUtterance=question, SecretKey=secretKey)
     soup = BeautifulSoup(response, 'xml')
     status = soup.find('GetDialogResponseResult')['Status']
-
     if status == '1':
         temp = soup.find('Utterance')
         temp = HTMLParser.HTMLParser().unescape(temp.get_text())
@@ -68,9 +66,9 @@ def getAnswer(sessionID, question, languageCode):
         if 'en' in languageCode:
             response = 'Sorry, I am having trouble finding an answer for you.'
         else:
-            response = u'对不起，我找不到适合的答案'
+            response = '对不起，我找不到适合的答案'
         print 'no matched question'
-    return response.encode('utf-8'), status
+    return response, status
 
 
 def destSession(sessionID):
@@ -85,7 +83,8 @@ def destSession(sessionID):
 
 
 #sessionID = iniSession(languageCode='zh-CN')
-#response, status = getAnswer(sessionID, u'涉及事故或电动混合动力动力电动汽车', 'zh-CN')
+#response, status = getAnswer(sessionID, u'经销商地点', 'zh-CN')
+#print type(response)
 #print response
 #print topTopics(sessionID, 'zh-CN')
 #destSession(sessionID)

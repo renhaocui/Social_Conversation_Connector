@@ -10,7 +10,6 @@ from datetime import datetime
 import wechatManager
 import xmltodict
 import hashlib
-import json
 
 app = Flask(__name__)
 
@@ -150,7 +149,6 @@ def sendMessage():
     appID = body['app_id']
     secret = body['secret']
     userID = body['user_id']
-
     temp = conversationID.split(',')
     if temp[0] == userID:
         accountID = temp[1]
@@ -164,11 +162,10 @@ def sendMessage():
             if platform == 'WeChat':
                 tempConf = WechatConf(appid=appID, appsecret=secret, encrypt_mode='normal')
                 tempWechat = WechatBasic(conf=tempConf)
-                tempWechat.send_text_message(user_id=userID, content=content)
-                print '[' + platform + ']Message sent to user: ' + userID
-                t = Thread(target=utilities.forwardUserMessage,
-                           args=(platform, 'agent', conversationID, '', accountID, userID, content, str(datetime.now().isoformat()[:-7]) + 'Z'))
-                t.start()
+                contentList = utilities.splitMessage(content, 400)
+                for content in contentList:
+                    tempWechat.send_text_message(user_id=userID, content=content)
+                    utilities.forwardUserMessage(platform, 'agent', conversationID, '', accountID, userID, content, str(datetime.now().isoformat()[:-7]) + 'Z')
                 return '', 200
             else:
                 contentList = utilities.splitMessage(content, 320)
@@ -211,7 +208,7 @@ def setAccountStatus():
 
 
 def sendWechatResponse(weChat, response, conversationID, messageID, fromUserName, toUserName):
-    responseList = utilities.splitMessage(response, 2000)
+    responseList = utilities.splitMessage(response, 400)
     for response in responseList:
         weChat.send_text_message(user_id=fromUserName, content=response)
         utilities.forwardAKMessage('WeChat', 'kms', conversationID, messageID, toUserName, fromUserName, response,
@@ -262,7 +259,6 @@ def messengerProcessRequest():
 
         if content.isdigit() and len(topTopics['Facebook']['topics']) > 0:
             msgLang = topTopics['Facebook']['lang']
-            print 'aaaaaaaaa ' + msgLang
         if 'zh' not in msgLang:
             print 'English Session'
             # start of agent conversation
@@ -318,8 +314,10 @@ def messengerProcessRequest():
                     response = 'Cannot connect to Astute Knowledge Server. Type HELP for a real agent.'
                     sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
                     if sendStatus.status_code == 200:
-                        utilities.forwardConversation('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime, response,
-                                                      str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
+                        t = Thread(target=utilities.forwardConversation,
+                                   args=('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime, response,
+                                         str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id']))
+                        t.start()
                     return '', 200
         else:
             print 'Chinese Session'
@@ -375,12 +373,15 @@ def messengerProcessRequest():
                             if sendStatus.status_code == 200:
                                 utilities.forwardAKMessage('Facebook', 'kms', conversationID, responseContent['message_id'], recipient, sender, content,
                                                            str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z')
-                except:
+                except Exception as e:
+                    print e
                     response = '无法连接数据服务器。 输入【求助】将为您安排客服。'
                     sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
                     if sendStatus.status_code == 200:
-                        utilities.forwardConversation('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime, response,
-                                                      str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
+                        t = Thread(target=utilities.forwardConversation,
+                                   args=('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime, response,
+                                         str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id']))
+                        t.start()
                     return '', 200
     return '', 200
 
@@ -552,7 +553,8 @@ def wechatProcessRequest():
                                    )
                         t.start()
                         return wechat.response_none()
-                except:
+                except Exception as e:
+                    print e
                     response = '无法连接数据服务器。 输入【求助】将为您安排客服。'
                     t = Thread(target=utilities.forwardConversation,
                                args=('WeChat', 'kms', conversationID, messageID, fromUserName, toUserName, content, createdTime, response,
