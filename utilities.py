@@ -56,30 +56,33 @@ def generateWeChatHome(lang='en'):
     outputList = []
 
     temp = {'title': 'FordPass', 'description': 'Ford Pass',
-            'picurl': 'https://dl.dropboxusercontent.com/u/93550717/site/fordpasslogo.png',
+            'picurl': 'http://web.cse.ohio-state.edu/~cuir/site/fordpasslogo.png',
             'url': 'https://www.fordpass.com/'}
     outputList.append(temp)
 
     temp = {'title': 'My Vehicles', 'description': 'my vehicles',
-            'picurl': 'https://dl.dropboxusercontent.com/u/93550717/site/myvehicles.png',
-            'url': 'https://dl.dropboxusercontent.com/u/93550717/site/test.html'}
-    if 'en' not in lang:
+            #'picurl': 'https://dl.dropboxusercontent.com/u/93550717/site/myvehicles.png',
+            'picurl': 'http://web.cse.ohio-state.edu/~cuir/site/myvehicles.png',
+            'url': 'http://web.cse.ohio-state.edu/~cuir/site/test.html'}
+    if lang != 'en':
         temp['title'] = u'我的车辆'
-        temp['url'] = 'https://dl.dropboxusercontent.com/u/93550717/site copy/test.html'
+        temp['url'] = 'http://web.cse.ohio-state.edu/~cuir/site copy/test.html'
     outputList.append(temp)
 
     temp = {'title': 'My Dealer', 'description': 'dealer',
-            'picurl': 'https://dl.dropboxusercontent.com/u/93550717/site/mydealer.png',
-            'url': 'https://dl.dropboxusercontent.com/u/93550717/site/test1.html'}
-    if 'en' not in lang:
+            #'picurl': 'https://dl.dropboxusercontent.com/u/93550717/site/mydealer.png',
+            'picurl': 'http://web.cse.ohio-state.edu/~cuir/site/mydealer.png',
+            'url': 'http://web.cse.ohio-state.edu/~cuir/site/test1.html'}
+    if lang != 'en':
         temp['title'] = u'经销商'
-        temp['url'] = 'https://dl.dropboxusercontent.com/u/93550717/site copy/test1.html'
+        temp['url'] = 'http://web.cse.ohio-state.edu/~cuir/site copy/test1.html'
     outputList.append(temp)
 
     temp = {'title': 'Park', 'description': 'parking',
-            'picurl': 'https://dl.dropboxusercontent.com/u/93550717/site/park.png',
-            'url': 'https://www.bing.com/mapspreview'}
-    if 'en' not in lang:
+            #'picurl': 'https://dl.dropboxusercontent.com/u/93550717/site/park.png',
+            'picurl': 'http://web.cse.ohio-state.edu/~cuir/site/park.png',
+            'url': 'http://www.bing.com/mapspreview'}
+    if lang != 'en':
         temp['title'] = u'停车'
         #temp['url'] = 'https://www.gaode.com/'
     outputList.append(temp)
@@ -158,7 +161,6 @@ def forwardUserMessage(platform, conversationStatus, conversationID, messageID, 
 
 def forwardAKMessage(platform, conversationStatus, conversationID, messageID, fromUserName, toUserName, content,
                      createdTime):
-    print content + ': ' + str(type(content))
     data = {'access_token': socialToken, 'platform': platform, 'conversation_status': conversationStatus,
             'conversation_service_id': conversationID, 'from_id': fromUserName, 'service_id': messageID,
             'to_id': toUserName, 'content': content, 'content_type': 'text', 'created_time': createdTime}

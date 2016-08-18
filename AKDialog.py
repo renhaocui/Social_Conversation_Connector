@@ -83,7 +83,7 @@ def destSession(sessionID):
 
 
 #sessionID = iniSession(languageCode='zh-CN')
-#response, status = getAnswer(sessionID, u'经销商地点', 'zh-CN')
+#response, status = getAnswer(sessionID, u'路边救援', 'zh-CN')
 #print type(response)
 #print response
 #print topTopics(sessionID, 'zh-CN')

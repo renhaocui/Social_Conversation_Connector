@@ -48,12 +48,12 @@ def setMessengerMenu(token):
             {
                 "type": "web_url",
                 "title": "Guides",
-                "url": "https://dl.dropboxusercontent.com/u/93550717/site/GuidesHome.html"
+                "url": "https://web.cse.ohio-state.edu/~cuir/site/GuidesHome.html"
             },
             {
                 "type": "web_url",
                 "title": "Roadside",
-                "url": "https://dl.dropboxusercontent.com/u/93550717/site/test2.html"
+                "url": "https://web.cse.ohio-state.edu/~cuir/site/test2.html"
             }
         ]
     }
@@ -73,15 +73,15 @@ def setWeChatMenu(accessToken, lang):
     if lang == 'en':
         menu_data = {'button': [{'type': 'click', 'name': 'Home', 'key': 'home_box'},
                             {'type': 'view', 'name': 'Guides',
-                             'url': 'https://dl.dropboxusercontent.com/u/93550717/site/GuidesHome.html'},
+                             'url': 'http://web.cse.ohio-state.edu/~cuir/site/GuidesHome.html'},
                             {'type': 'view', 'name': 'Roadside',
-                             'url': 'https://dl.dropboxusercontent.com/u/93550717/site/test2.html'}]}
+                             'url': 'http://web.cse.ohio-state.edu/~cuir/site/test2.html'}]}
     else:
         menu_data = {'button': [{'type': 'click', 'name': "主页", 'key': 'home_box'},
                             {'type': 'view', 'name': "目录",
-                             'url': 'https://dl.dropboxusercontent.com/u/93550717/site copy/GuidesHome.html'},
+                             'url': 'http://web.cse.ohio-state.edu/~cuir/site copy/GuidesHome.html'},
                             {'type': 'view', 'name': "道路救援",
-                             'url': 'https://dl.dropboxusercontent.com/u/93550717/site copy/test2.html'}]}
+                             'url': 'http://web.cse.ohio-state.edu/~cuir/site copy/test2.html'}]}
     response = requests.post(url, data=json.dumps(menu_data, ensure_ascii=False), verify=False).content
     return response
 
