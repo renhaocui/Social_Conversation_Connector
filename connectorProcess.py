@@ -224,169 +224,174 @@ def messengerProcessRequest():
     global topTopics
     body = request.json
     # print body
-    if 'postback' in body['entry'][0]['messaging'][0]:
-        recipient = body['entry'][0]['messaging'][0]['recipient']['id']
-        if recipient == messengerPageId:
-            sender = body['entry'][0]['messaging'][0]['sender']['id']
-            payload = body['entry'][0]['messaging'][0]['postback']['payload']
-            statusCode = 500
-            if payload == 'home_page':
-                index = 0
-                while statusCode != 200 and index < 10:
-                    sendStatus, responseContent = utilities.sendMessengerHome(messengerTokenList[recipient], sender)
-                    statusCode = sendStatus.status_code
-                    index += 1
-                print 'User [' + sender + '] request for home page. ' + str(sendStatus)
-            elif payload == 'get_started':
-                sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender,
-                                                                      'Welcome! Click the bars at the bottom left for the menu, or type in your query.')
-                print 'User [' + sender + '] get started.' + str(sendStatus)
-            return '', 200
-
-    elif 'message' in body['entry'][0]['messaging'][0]:
-        recipient = body['entry'][0]['messaging'][0]['recipient']['id']
-        if recipient == messengerPageId:
-            sender = body['entry'][0]['messaging'][0]['sender']['id']
-            timestamp = body['entry'][0]['messaging'][0]['timestamp'] / 1000
-            content = body['entry'][0]['messaging'][0]['message']['text']
-            messageID = body['entry'][0]['messaging'][0]['message']['mid']
-            conversationID = utilities.generateConversationID(recipient, sender)
-            # messageSeq = body['entry'][0]['messaging'][0]['message']['seq']
-
-            if recipient in accountStatusList['Facebook']:
-                accountStatus = accountStatusList['Facebook'][recipient]
+    if 'messaging' in body['entry'][0]:
+        if 'postback' in body['entry'][0]['messaging'][0]:
+            recipient = body['entry'][0]['messaging'][0]['recipient']['id']
+            if recipient == messengerPageId:
+                sender = body['entry'][0]['messaging'][0]['sender']['id']
+                payload = body['entry'][0]['messaging'][0]['postback']['payload']
+                statusCode = 500
+                if payload == 'home_page':
+                    index = 0
+                    while statusCode != 200 and index < 10:
+                        sendStatus, responseContent = utilities.sendMessengerHome(messengerTokenList[recipient], sender)
+                        statusCode = sendStatus.status_code
+                        index += 1
+                    print 'User [' + sender + '] request for home page. ' + str(sendStatus)
+                elif payload == 'get_started':
+                    sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender,
+                                                                          'Welcome! Click the bars at the bottom left for the menu, or type in your query.')
+                    print 'User [' + sender + '] get started.' + str(sendStatus)
+                return '', 200
             else:
-                accountStatus = (True, False)
+                return '', 200
 
-            createdTime = str(datetime.fromtimestamp(timestamp).isoformat()) + 'Z'
-            msgLang = identifier.classify(content)[0]
+        elif 'message' in body['entry'][0]['messaging'][0]:
+            recipient = body['entry'][0]['messaging'][0]['recipient']['id']
+            if recipient == messengerPageId:
+                sender = body['entry'][0]['messaging'][0]['sender']['id']
+                timestamp = body['entry'][0]['messaging'][0]['timestamp'] / 1000
+                content = body['entry'][0]['messaging'][0]['message']['text']
+                messageID = body['entry'][0]['messaging'][0]['message']['mid']
+                conversationID = utilities.generateConversationID(recipient, sender)
+                # messageSeq = body['entry'][0]['messaging'][0]['message']['seq']
 
-            if content.isdigit() and len(topTopics['Facebook']['topics']) > 0:
-                msgLang = topTopics['Facebook']['lang']
-            if 'zh' not in msgLang:
-                print 'English Session'
-                # start of agent conversation
-                if content.lower() == 'help' and accountStatus[0] and (
-                            (conversationID not in conversationStatusList['Facebook']) or (
-                                    conversationStatusList['Facebook'][conversationID] == 'kms')):
-                    conversationStatusList['Facebook'][conversationID] = 'agent'
-                    response = 'Agent service requested, please wait...\n Type END to disconnect.'
-                    sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
-                    if sendStatus.status_code == 200:
-                        utilities.forwardConversation('Facebook', 'agent', conversationID, messageID, sender, recipient, content, createdTime, response,
-                                                      str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
-                # end of agent conversation
-                elif content.lower() == 'end' and (conversationID in conversationStatusList['Facebook']) \
-                        and conversationStatusList['Facebook'][conversationID] == 'agent':
-                    conversationStatusList['Facebook'][conversationID] = 'kms'
-                    response = 'Agent Disconnected, Goodbye'
-                    sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
-                    if sendStatus.status_code == 200:
-                        utilities.forwardConversation('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime, response,
-                                                      str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
-                # agent conversation
-                elif (conversationID in conversationStatusList['Facebook']) and conversationStatusList['Facebook'][conversationID] == 'agent':
-                    utilities.forwardUserMessage('Facebook', 'agent', conversationID, messageID, sender, recipient, content, createdTime)
+                if recipient in accountStatusList['Facebook']:
+                    accountStatus = accountStatusList['Facebook'][recipient]
                 else:
-                    try:
-                        topTopics['Facebook'], response, status = utilities.AKRequest(content, topTopics['Facebook'], languageCode_en)
-                        if status != '1':
-                            if accountStatus[1]:
-                                response += ' An agent will be with you shortly.'
-                                conversationStatusList['Facebook'][conversationID] = 'agent'
-                                sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
-                                if sendStatus.status_code == 200:
-                                    utilities.forwardConversation('Facebook', 'agent', conversationID, messageID, sender, recipient, content, createdTime, response,
-                                                                  str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
-                            else:
-                                if accountStatus[0]:
-                                    response += ' Type HELP for a real agent.'
-                                sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
-                                if sendStatus.status_code == 200:
-                                    utilities.forwardConversation('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime, response,
-                                                                  str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
-                        else:
-                            utilities.forwardUserMessage('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime)
-                            contentList = utilities.splitMessage(response, 320)
-                            for content in contentList:
-                                sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, content)
-                                if sendStatus.status_code == 200:
-                                    utilities.forwardAKMessage('Facebook', 'kms', conversationID, responseContent['message_id'], recipient, sender, content,
-                                                               str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z')
-                    except Exception as e:
-                        print e
-                        response = 'Cannot connect to Astute Knowledge Server. Type HELP for a real agent.'
+                    accountStatus = (True, False)
+
+                createdTime = str(datetime.fromtimestamp(timestamp).isoformat()) + 'Z'
+                msgLang = identifier.classify(content)[0]
+
+                if content.isdigit() and len(topTopics['Facebook']['topics']) > 0:
+                    msgLang = topTopics['Facebook']['lang']
+                if 'zh' not in msgLang:
+                    print 'English Session'
+                    # start of agent conversation
+                    if content.lower() == 'help' and accountStatus[0] and (
+                                (conversationID not in conversationStatusList['Facebook']) or (
+                                        conversationStatusList['Facebook'][conversationID] == 'kms')):
+                        conversationStatusList['Facebook'][conversationID] = 'agent'
+                        response = 'Agent service requested, please wait...\n Type END to disconnect.'
                         sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
                         if sendStatus.status_code == 200:
-                            t = Thread(target=utilities.forwardConversation,
-                                       args=('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime, response,
-                                             str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id']))
-                            t.start()
-                        return '', 200
-            else:
-                print 'Chinese Session'
-                # start of agent conversation
-                if content == u'求助' and accountStatus[0] and (
-                            (conversationID not in conversationStatusList['Facebook']) or (
-                                    conversationStatusList['Facebook'][conversationID] == 'kms')):
-                    conversationStatusList['Facebook'][conversationID] = 'agent'
-                    response = '客服连接中，请稍后...\n输入【结束】将结束本次服务。'
-                    sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
-                    if sendStatus.status_code == 200:
-                        utilities.forwardConversation('Facebook', 'agent', conversationID, messageID, sender, recipient, content, createdTime, response,
-                                                      str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
-                # end of agent conversation
-                elif content == u'结束' and (conversationID in conversationStatusList['Facebook']) and \
-                                conversationStatusList['Facebook'][conversationID] == 'agent':
-                    conversationStatusList['Facebook'][conversationID] = 'kms'
-                    response = '本次服务结束，谢谢。'
-                    sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
-                    if sendStatus.status_code == 200:
-                        utilities.forwardConversation('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime, response,
-                                                      str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
-                # agent conversation
-                elif (conversationID in conversationStatusList['Facebook']) and conversationStatusList['Facebook'][
-                    conversationID] == 'agent':
-                    utilities.forwardUserMessage('Facebook', 'agent', conversationID, messageID, sender, recipient, content,
-                                                 createdTime)
-
-                else:
-                    try:
-                        topTopics['Facebook'], response, status = utilities.AKRequest(content, topTopics['Facebook'], languageCode_zh)
-                        if status != '1':
-                            if accountStatus[1]:
-                                response += ' 我们会为您安排客服解答。'
-                                sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
-                                if sendStatus.status_code == 200:
+                            utilities.forwardConversation('Facebook', 'agent', conversationID, messageID, sender, recipient, content, createdTime, response,
+                                                          str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
+                    # end of agent conversation
+                    elif content.lower() == 'end' and (conversationID in conversationStatusList['Facebook']) \
+                            and conversationStatusList['Facebook'][conversationID] == 'agent':
+                        conversationStatusList['Facebook'][conversationID] = 'kms'
+                        response = 'Agent Disconnected, Goodbye'
+                        sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
+                        if sendStatus.status_code == 200:
+                            utilities.forwardConversation('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime, response,
+                                                          str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
+                    # agent conversation
+                    elif (conversationID in conversationStatusList['Facebook']) and conversationStatusList['Facebook'][conversationID] == 'agent':
+                        utilities.forwardUserMessage('Facebook', 'agent', conversationID, messageID, sender, recipient, content, createdTime)
+                    else:
+                        try:
+                            topTopics['Facebook'], response, status = utilities.AKRequest(content, topTopics['Facebook'], languageCode_en)
+                            if status != '1':
+                                if accountStatus[1]:
+                                    response += ' An agent will be with you shortly.'
                                     conversationStatusList['Facebook'][conversationID] = 'agent'
-                                    utilities.forwardConversation('Facebook', 'agent', conversationID, messageID, sender, recipient, content, createdTime, response,
-                                                                  str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
+                                    sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
+                                    if sendStatus.status_code == 200:
+                                        utilities.forwardConversation('Facebook', 'agent', conversationID, messageID, sender, recipient, content, createdTime, response,
+                                                                      str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
+                                else:
+                                    if accountStatus[0]:
+                                        response += ' Type HELP for a real agent.'
+                                    sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
+                                    if sendStatus.status_code == 200:
+                                        utilities.forwardConversation('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime, response,
+                                                                      str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
                             else:
-                                if accountStatus[0]:
-                                    response += ' 输入【求助】将为您安排客服。'
-                                sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
-                                if sendStatus.status_code == 200:
-                                    utilities.forwardConversation('Facebook',
-                                                                  'kms', conversationID, messageID, sender, recipient, content, createdTime, response,
-                                                                  str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
-                        else:
-                            utilities.forwardUserMessage('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime)
-                            contentList = utilities.splitMessage(response, 320)
-                            for content in contentList:
-                                sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, content)
-                                if sendStatus.status_code == 200:
-                                    utilities.forwardAKMessage('Facebook', 'kms', conversationID, responseContent['message_id'], recipient, sender, content,
-                                                               str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z')
-                    except Exception as e:
-                        print e
-                        response = '无法连接数据服务器。 输入【求助】将为您安排客服。'
+                                utilities.forwardUserMessage('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime)
+                                contentList = utilities.splitMessage(response, 320)
+                                for content in contentList:
+                                    sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, content)
+                                    if sendStatus.status_code == 200:
+                                        utilities.forwardAKMessage('Facebook', 'kms', conversationID, responseContent['message_id'], recipient, sender, content,
+                                                                   str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z')
+                        except Exception as e:
+                            print e
+                            response = 'Cannot connect to Astute Knowledge Server. Type HELP for a real agent.'
+                            sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
+                            if sendStatus.status_code == 200:
+                                t = Thread(target=utilities.forwardConversation,
+                                           args=('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime, response,
+                                                 str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id']))
+                                t.start()
+                            return '', 200
+                else:
+                    print 'Chinese Session'
+                    # start of agent conversation
+                    if content == u'求助' and accountStatus[0] and (
+                                (conversationID not in conversationStatusList['Facebook']) or (
+                                        conversationStatusList['Facebook'][conversationID] == 'kms')):
+                        conversationStatusList['Facebook'][conversationID] = 'agent'
+                        response = '客服连接中，请稍后...\n输入【结束】将结束本次服务。'
                         sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
                         if sendStatus.status_code == 200:
-                            t = Thread(target=utilities.forwardConversation,
-                                       args=('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime, response,
-                                             str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id']))
-                            t.start()
-                        return '', 200
+                            utilities.forwardConversation('Facebook', 'agent', conversationID, messageID, sender, recipient, content, createdTime, response,
+                                                          str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
+                    # end of agent conversation
+                    elif content == u'结束' and (conversationID in conversationStatusList['Facebook']) and \
+                                    conversationStatusList['Facebook'][conversationID] == 'agent':
+                        conversationStatusList['Facebook'][conversationID] = 'kms'
+                        response = '本次服务结束，谢谢。'
+                        sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
+                        if sendStatus.status_code == 200:
+                            utilities.forwardConversation('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime, response,
+                                                          str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
+                    # agent conversation
+                    elif (conversationID in conversationStatusList['Facebook']) and conversationStatusList['Facebook'][
+                        conversationID] == 'agent':
+                        utilities.forwardUserMessage('Facebook', 'agent', conversationID, messageID, sender, recipient, content,
+                                                     createdTime)
+
+                    else:
+                        try:
+                            topTopics['Facebook'], response, status = utilities.AKRequest(content, topTopics['Facebook'], languageCode_zh)
+                            if status != '1':
+                                if accountStatus[1]:
+                                    response += ' 我们会为您安排客服解答。'
+                                    sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
+                                    if sendStatus.status_code == 200:
+                                        conversationStatusList['Facebook'][conversationID] = 'agent'
+                                        utilities.forwardConversation('Facebook', 'agent', conversationID, messageID, sender, recipient, content, createdTime, response,
+                                                                      str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
+                                else:
+                                    if accountStatus[0]:
+                                        response += ' 输入【求助】将为您安排客服。'
+                                    sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
+                                    if sendStatus.status_code == 200:
+                                        utilities.forwardConversation('Facebook',
+                                                                      'kms', conversationID, messageID, sender, recipient, content, createdTime, response,
+                                                                      str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id'])
+                            else:
+                                utilities.forwardUserMessage('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime)
+                                contentList = utilities.splitMessage(response, 320)
+                                for content in contentList:
+                                    sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, content)
+                                    if sendStatus.status_code == 200:
+                                        utilities.forwardAKMessage('Facebook', 'kms', conversationID, responseContent['message_id'], recipient, sender, content,
+                                                                   str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z')
+                        except Exception as e:
+                            print e
+                            response = '无法连接数据服务器。 输入【求助】将为您安排客服。'
+                            sendStatus, responseContent = utilities.sendMessenger(messengerTokenList[recipient], sender, response)
+                            if sendStatus.status_code == 200:
+                                t = Thread(target=utilities.forwardConversation,
+                                           args=('Facebook', 'kms', conversationID, messageID, sender, recipient, content, createdTime, response,
+                                                 str(datetime.fromtimestamp(timestamp + 1).isoformat()) + 'Z', responseContent['message_id']))
+                                t.start()
+                            return '', 200
+            else:
+                return '', 200
     else:
         return '', 200
 
