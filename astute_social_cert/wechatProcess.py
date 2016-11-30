@@ -266,7 +266,7 @@ def wechatProcessRequest():
                 return wechat.response_none()
             else:  # AK bot
                 try:
-                    topTopics['WeChat'], response, status = utilities.AKRequest(content, topTopics['WeChat'], languageCode_en)
+                    topTopics['WeChat'], response, outputList, status = utilities.AKRequest(content, topTopics['WeChat'], languageCode_en)
                     if status != '1':
                         if accountStatus[1]:
                             response += ' An agent will be with you shortly.'
@@ -331,7 +331,7 @@ def wechatProcessRequest():
                 return wechat.response_none()
             else:
                 try:
-                    topTopics['WeChat'], response, status = utilities.AKRequest(content, topTopics['WeChat'], languageCode_zh)
+                    topTopics['WeChat'], response, outputList, status = utilities.AKRequest(content, topTopics['WeChat'], languageCode_zh)
                     if status != '1':
                         if accountStatus[1]:
                             response += ' 我们会为您安排客服解答。'
