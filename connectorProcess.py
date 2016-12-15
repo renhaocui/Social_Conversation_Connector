@@ -340,6 +340,13 @@ def messengerProcessRequest():
                             sendStatus, responseContent = messageCreator.sendMessengerMcD2(facebookToken, sender)
                             statusCode = sendStatus.status_code
                             index += 1
+                    elif 'in fbm' in content.lower():
+                        statusCode = 500
+                        index = 0
+                        while statusCode != 200 and index < 3:
+                            sendStatus, responseContent = messageCreator.sendOmegaAir1(facebookToken, sender)
+                            statusCode = sendStatus.status_code
+                            index += 1
                     elif specialCase == 'Location':
                         statusCode = 500
                         index = 0

@@ -343,6 +343,26 @@ def sendMessengerStructure3(token, recipient):
     return response, json.loads(response.text)
 
 
+def sendOmegaAir1(token, recipient):
+    messengerSendURL = messengerThreadUrl + token
+    data = {
+        "recipient": {
+            "id": recipient
+        },
+        "message": {
+            "attachment": {
+                "type": "image",
+                "payload": {
+                    "url": "http://web.cse.ohio-state.edu/~cuir/src/boardingcard.png"
+                }
+            }
+        }
+    }
+
+    response = requests.post(messengerSendURL, json=data, verify=False)
+
+    return response, json.loads(response.text)
+
 def sendMessengerMcD1(token, recipient):
     messengerSendURL = messengerThreadUrl + token
     data = {
