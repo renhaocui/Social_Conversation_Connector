@@ -19,29 +19,27 @@ def storeTopics(content):
 
 def AKRequest(content, topTopics, languageCode, kbName):
     if 'en' in languageCode:
-        sessionID = AKDialog.iniSession(languageCode=languageCode, kbName=kbName)
         if content.lower() == 'top topics':
-            response, status = AKDialog.topTopics(sessionID, languageCode, kbName)
+            response, status = AKDialog.topTopics(languageCode, kbName)
             topTopics['topics'] = storeTopics(response)
             topTopics['lang'] = languageCode
             outputList = {'ExpectedAnswers': {}, 'SuggestedTopics': {}}
         elif content.isdigit() and len(topTopics['topics']) > 0 and content.strip() in topTopics['topics']:
             content = topTopics['topics'][content.strip()]
-            response, status, outputList, sessionID = AKDialog.getAnswer(sessionID, content, languageCode, kbName)
+            response, status, outputList, sessionID = AKDialog.getAnswer(content, languageCode, kbName)
         else:
-            response, status, outputList, sessionID = AKDialog.getAnswer(sessionID, content, languageCode, kbName)
+            response, status, outputList, sessionID = AKDialog.getAnswer(content, languageCode, kbName)
     else:
-        sessionID = AKDialog.iniSession(languageCode=languageCode, kbName=kbName)
         if unicode(content) == u'热门话题':
-            response, status = AKDialog.topTopics(sessionID, languageCode, kbName)
+            response, status = AKDialog.topTopics(languageCode, kbName)
             topTopics['topics'] = storeTopics(response)
             topTopics['lang'] = languageCode
             outputList = {'ExpectedAnswers': {}, 'SuggestedTopics': {}}
         elif content.isdigit() and len(topTopics['topics']) > 0 and content.strip() in topTopics['topics']:
             content = topTopics['topics'][content.strip()]
-            response, status, outputList, sessionID = AKDialog.getAnswer(sessionID, content, languageCode, kbName)
+            response, status, outputList, sessionID = AKDialog.getAnswer(content, languageCode, kbName)
         else:
-            response, status, outputList, sessionID = AKDialog.getAnswer(sessionID, content, languageCode, kbName)
+            response, status, outputList, sessionID = AKDialog.getAnswer(content, languageCode, kbName)
     return topTopics, response, outputList, status, sessionID
 
 

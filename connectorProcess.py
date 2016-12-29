@@ -234,7 +234,7 @@ def messengerProcessRequest():
         specialCase = 'None'
         if 'postback' in body['entry'][0]['messaging'][0]:
             payload = body['entry'][0]['messaging'][0]['postback']['payload']
-            if payload != 'get_started' and payload != 'home_page':
+            if '**' in payload:
                 specialCase = 'Click'
         if 'postback' in body['entry'][0]['messaging'][0] and specialCase == 'None':
             recipient = body['entry'][0]['messaging'][0]['recipient']['id']
@@ -257,6 +257,7 @@ def messengerProcessRequest():
             return '', 200
         elif 'message' in body['entry'][0]['messaging'][0] or specialCase != 'None':
             recipient = body['entry'][0]['messaging'][0]['recipient']['id']
+            print 'Recipient: ' + str(recipient)
             facebookToken = property.facebookTokenList[property.facebookAccountMapper[recipient]]
             if recipient in property.facebookAccountMapper:
                 sender = body['entry'][0]['messaging'][0]['sender']['id']
@@ -266,6 +267,7 @@ def messengerProcessRequest():
                 if specialCase == 'Click':
                     messageID = body['entry'][0]['id']
                     content = payload
+                    print content
                 elif 'attachments' in body['entry'][0]['messaging'][0]['message']:
                     if body['entry'][0]['messaging'][0]['message']['attachments'][0]['type'] == 'location':
                         lat = body['entry'][0]['messaging'][0]['message']['attachments'][0]['payload']['coordinates']['lat']
