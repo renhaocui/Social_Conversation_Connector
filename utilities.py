@@ -20,7 +20,7 @@ def storeTopics(content):
 def AKRequest(content, topTopics, languageCode, kbName):
     if 'en' in languageCode:
         if content.lower() == 'top topics':
-            response, status = AKDialog.topTopics(languageCode, kbName)
+            response, status, sessionID = AKDialog.topTopics(languageCode, kbName)
             topTopics['topics'] = storeTopics(response)
             topTopics['lang'] = languageCode
             outputList = {'ExpectedAnswers': {}, 'SuggestedTopics': {}}
@@ -31,7 +31,7 @@ def AKRequest(content, topTopics, languageCode, kbName):
             response, status, outputList, sessionID = AKDialog.getAnswer(content, languageCode, kbName)
     else:
         if unicode(content) == u'热门话题':
-            response, status = AKDialog.topTopics(languageCode, kbName)
+            response, status, sessionID = AKDialog.topTopics(languageCode, kbName)
             topTopics['topics'] = storeTopics(response)
             topTopics['lang'] = languageCode
             outputList = {'ExpectedAnswers': {}, 'SuggestedTopics': {}}

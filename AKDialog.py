@@ -33,7 +33,7 @@ def topTopics(languageCode, kbName):
             out = 'No top topics'
         else:
             out = '没有热门话题'
-    return out, '1'
+    return out, '1', sessionID
 
 
 '''
@@ -122,8 +122,8 @@ def destSession(sessionID, kbName):
 
 #sessionID = iniSession(languageCode='en', kbName='OmegaAir')
 #print sessionID
-#response, status, outputList, sessionID = getAnswer(sessionID, 'I cannot checkin', 'en', 'OmegaAir')
-#response, status, outputList, sessionID = getAnswer('fdafs', 'AMS-LHR today**expected0**a0b668d87a3b-7b3a39d3-be6b44f39f71d613-480a8ede', 'en', 'OmegaAir')
+#response, status, outputList, sessionID = getAnswer('I cannot checkin', 'en', 'OmegaAir')
+#response, status, outputList, sessionID = getAnswer('AMS-LHR today**expected0**6b10a1129a02-f6378d8a-071406a8217b4e8d-4e588ea1', 'en', 'OmegaAir')
 #print response
 #print status
 #print outputList

@@ -14,6 +14,7 @@ import hashlib
 import messageCreator
 import property
 import sys, os
+import json
 
 app = Flask(__name__)
 
@@ -222,6 +223,50 @@ def sendWechatResponse(weChat, response, conversationID, messageID, fromUserName
         utilities.forwardAKMessage('WeChat', 'kms', conversationID, messageID, toUserName, fromUserName, response,
                                    str(datetime.fromtimestamp(weChat.message.time + 1).isoformat()) + 'Z')
     return True
+
+
+@app.route('/AmazonAlexa', methods=['POST'])
+def alexaProcessRequest():
+    body = request.json
+    print body['request']
+    out = {
+        "version": "1.0",
+        "sessionAttributes": {
+            "supportedHoriscopePeriods": {
+                "daily": True,
+                "weekly": False,
+                "monthly": False
+            }
+        },
+        "response": {
+            "outputSpeech": {
+                "type": "PlainText",
+                "text": "Dummy response"
+            },
+            "card": {
+                "type": "Simple",
+                "title": "Horoscope",
+                "content": "Dummy response"
+            },
+            "reprompt": {
+                "outputSpeech": {
+                    "type": "PlainText",
+                    "text": "Can I help you with anything else?"
+                }
+            },
+            "shouldEndSession": True
+        }
+    }
+
+    if body['request']['intent']['name'] == 'Connectivity':
+        out['response']['outputSpeech']['text'] = "This response confirms the connectivity of the server. The response function works as expected."
+        out['response']['card']['content'] = "This response confirms the connectivity of the server. The response function works as expected."
+    elif body['request']['intent']['name'] == 'GetAnswer':
+        topTopics, response, outputList, status, sessionID = utilities.AKRequest(body['request']['intent']['slots']['Query']['value'], {}, languageCode_en, 'FordPass')
+        out['response']['outputSpeech']['text'] = response.replace('\n', '. ')
+        out['response']['card']['content'] = response
+
+    return json.dumps(out), 200
 
 
 @app.route('/FBmessenger', methods=['POST'])
