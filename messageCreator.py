@@ -52,6 +52,17 @@ def sendMessengerHome(token, recipient, lang='en'):
     return response, json.loads(response.text)
 
 
+def constructAlexaText(status, content, inputList, lang='en'):
+    out = content.replace('\n', '. ')
+    if status == '2':
+        out += ' '
+        if len(inputList['SuggestedTopics']) > 0:
+            for index, title in enumerate(inputList['SuggestedTopics'].keys()):
+                out += str(index+1) + ': '+title+'. '
+
+    return out
+
+
 def sendMessengerAKButton(token, recipient, content, inputList, mode, sessionID, lang='en'):
     messengerSendURL = messengerThreadUrl + token
     buttons = []
