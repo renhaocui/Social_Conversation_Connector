@@ -15,7 +15,6 @@ def iniSession(languageCode='en', kbName='FordPass'):
                                                     SecretKey=property.secretKeyList[kbName])
     soup = BeautifulSoup(response, 'xml')
     sessionID = soup.get_text()
-    # print 'New session: ' + sessionID
     return sessionID
 
 
@@ -61,7 +60,7 @@ def getAnswer(question, languageCode, kbName):
     #print clientList[kbName].last_sent()
     soup = BeautifulSoup(response, 'xml')
     status = soup.find('GetDialogResponseResult')['Status']
-    #print soup
+    print response
     outputList = {'ExpectedAnswers': {}, 'SuggestedTopics': {}}
     if status == '1':
         temp = soup.find('Utterance')
@@ -120,18 +119,20 @@ def destSession(sessionID, kbName):
     return result
 
 
-#sessionID = iniSession(languageCode='en', kbName='OmegaAir')
-#print sessionID
-#response, status, outputList, sessionID = getAnswer('I cannot checkin', 'en', 'OmegaAir')
-#response, status, outputList, sessionID = getAnswer('AMS-LHR today**expected0**6b10a1129a02-f6378d8a-071406a8217b4e8d-4e588ea1', 'en', 'OmegaAir')
-#print response
-#print status
-#print outputList
-#print ''
-#response, status, outputList, sessionID = getAnswer('fdafs', 'LHR-AMS tomorrow**expected1**a0b668d87a3b-7b3a39d3-be6b44f39f71d613-480a8ede', 'en', 'OmegaAir')
-#print response
-#print status
-#print outputList
 
-#print topTopics(sessionID, 'en', 0)
-# destSession(sessionID, client)
+if __name__ == "__main__":
+    #sessionID = iniSession(languageCode='en', kbName='AC2017')
+    #print sessionID
+    response, status, outputList, sessionID = getAnswer(u'你好', 'zh-CN', 'ColgateGlobal')
+    #response, status, outputList, sessionID = getAnswer('AMS-LHR today**expected0**6b10a1129a02-f6378d8a-071406a8217b4e8d-4e588ea1', 'en', 'OmegaAir')
+    print response
+    print status
+    print outputList
+    #print ''
+    #response, status, outputList, sessionID = getAnswer('fdafs', 'LHR-AMS tomorrow**expected1**a0b668d87a3b-7b3a39d3-be6b44f39f71d613-480a8ede', 'en', 'OmegaAir')
+    #print response
+    #print status
+    #print outputList
+
+    #print topTopics(sessionID, 'en', 0)
+    # destSession(sessionID, client)

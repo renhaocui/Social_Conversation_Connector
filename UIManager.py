@@ -1,19 +1,17 @@
 # -*- coding: utf-8 -*-
 import requests
 import json
+import property
 
-messengerThreadUrl = "https://graph.facebook.com/v2.6/me/thread_settings?access_token="
+messengerThreadUrl = "https://graph.facebook.com/v2.6/me/messenger_profile?access_token="
 
 def setMessengerGetStarted(token):
     threadSettingURL = messengerThreadUrl + token
     data = {
-        "setting_type": "call_to_actions",
-        "thread_state": "new_thread",
-        "call_to_actions": [
-            {
+        "get_started":{
                 "payload": "get_started"
             }
-        ]
+
     }
     response = requests.post(threadSettingURL, json=data, verify=False)
 
@@ -24,15 +22,16 @@ def setMessengerGreeting(token):
     threadSettingURL = messengerThreadUrl + token
     data = {
         "setting_type": "greeting",
-        "greeting": {
-            "text": "Welcome!"
-        }
+        "greeting": [{
+            "locale": "default",
+            "text": "Welcome to Astute Connect 2017!"
+        }]
     }
     response = requests.post(threadSettingURL, json=data, verify=False)
 
     return response, json.loads(response.text)
 
-
+'''
 def setMessengerMenu(token):
     threadSettingURL = messengerThreadUrl + token
     data = {
@@ -53,6 +52,87 @@ def setMessengerMenu(token):
                 "type": "web_url",
                 "title": "Roadside",
                 "url": "https://web.cse.ohio-state.edu/~cuir/site/test2.html"
+            }
+        ]
+    }
+    response = requests.post(threadSettingURL, json=data, verify=False)
+
+    return response, json.loads(response.text)
+'''
+
+def setMessengerMenu(token):
+    threadSettingURL = messengerThreadUrl + token
+    data = {
+        "persistent_menu": [
+            {
+                "locale": "default",
+                "composer_input_disabled": False,
+                "call_to_actions": [
+                    {
+                        "type": "postback",
+                        "title": "Book",
+                        "payload": "make a new flight reservation"
+                    },
+                    {
+                        "type": "nested",
+                        "title": "Manage",
+                        "call_to_actions": [
+                            {
+                                "title": "Check in",
+                                "type": "postback",
+                                "payload": "flight check in EK201"
+                            },
+                            {
+                                "title": "Flight Status",
+                                "type": "postback",
+                                "payload": "check flight status EK201"
+                            },
+                            {
+                                "title": "Change Flight",
+                                "type": "postback",
+                                "payload": "change flight EK201"
+                            },
+                            {
+                                "title": "Change Seat",
+                                "type": "postback",
+                                "payload": "change seat EK201"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "nested",
+                        "title": "Loyalty",
+                        "call_to_actions": [
+                            {
+                                "title": "Join us",
+                                "type": "web_url",
+                                "url": "https://www.emirates.com/account/english/light-registration/"
+                            },
+                            {
+                                "title": "Log in",
+                                "type": "web_url",
+                                "url": "https://www.emirates.com/account/english/login/login.aspx"
+                            },
+                            {
+                                "title": "Membership",
+                                "type": "web_url",
+                                "url": "https://www.emirates.com/english/skywards/about/membership-tiers/membership-tiers.aspx"
+                            },
+                            {
+                                "title": "Partners",
+                                "type": "web_url",
+                                "url": "https://www.emirates.com/english/skywards/about/partners/our-partners.aspx"
+                            },
+                            {
+                                "title": "Contact us",
+                                "type": "web_url",
+                                "url": "https://www.emirates.com/english/help/contact-emirates/"
+                            }
+
+                        ]
+                    }
+                ]
+
             }
         ]
     }
@@ -86,16 +166,11 @@ def setWeChatMenu(accessToken, lang):
 
 
 if __name__ == "__main__":
-    appid = 'wxc6587a03db4b22c6'
-    appsecret = 'fabd27f90c9a57b375723cb0f796563a'
-    messenger_token = 'EAAB1kFElgToBAHRJmoshPkpQzpEF2FviWyY9GdA5lUZBPwqRVb3tQdz9vlOkkLZBpp0nihxN5yyBJxDEZC3nTROBaosUYhiMWwwPcqUJiFEZA6lqQwcFHwfpWYZB8d7v5OsaZB2YDgLqRmpdNxvHy7s4pPiuPe8xK1MhFdgoRimgZDZD'
-
-    appid2 = 'wx29ff8b9de3978795'
-    appsecret2 = '5a4941c7f73a1cbbd91f5ef4a8d26b54'
-
-    accessToken = getWeChatAccessToken(appid, appsecret)
-    print setWeChatMenu(accessToken, 'zh')
-    #print setMessengerMenu(messenger_token)
-    #print setMessengerGreeting(messenger_token)
+    token = 'EAAS7yNVP3rgBAElyTTOJBj4fZCD7iZA0HpR3TVudZBkbZBOWEAI03KUY5MbNAFhu2OGuBgZAAZCKMpulsg0iXUt6ybvcvZC6uaVPZAFjbZCHgsl4ZCZAxt9UB7jRCEuWP78rfcqkxZCZAhcrN6glZCWZAZAqOv9y0BN3GjE8H9lWZBsWvauSY9QZDZD'
+    #accessToken = getWeChatAccessToken(appid, appsecret)
+    #print setWeChatMenu(accessToken, 'zh')
+    print setMessengerGetStarted(token)
+    print setMessengerMenu(token)
+    #print setMessengerGreeting(property.facebookTokenList['AC2017'])
     #print setMessengerGetStarted(messenger_token)
 
