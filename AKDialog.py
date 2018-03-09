@@ -123,7 +123,7 @@ def destSession(sessionID, kbName):
 if __name__ == "__main__":
     #sessionID = iniSession(languageCode='en', kbName='AC2017')
     #print sessionID
-    response, status, outputList, sessionID = getAnswer(u'你好', 'zh-CN', 'ColgateGlobal')
+    response, status, outputList, sessionID = getAnswer(u'质量问题', 'zh-CN', 'ColgateGlobal')
     #response, status, outputList, sessionID = getAnswer('AMS-LHR today**expected0**6b10a1129a02-f6378d8a-071406a8217b4e8d-4e588ea1', 'en', 'OmegaAir')
     print response
     print status

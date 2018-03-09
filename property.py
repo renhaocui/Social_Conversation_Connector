@@ -23,8 +23,9 @@ uriList = {'FordPass': 'http://rdqa.myastutesolutions.com/RDWeb/RDService/RealDi
            'ColgateGlobal': 'http://rdservice2.astuteknowledge.com/RDWeb/RDService/RealDialog.wsdl',
            'ColgateCard': 'http://rdqa.myastutesolutions.com/RDWeb/RDService/RealDialog.wsdl',
            'AC2017': 'http://service.astutesolutionsdemo.com/RDWeb/RDService/RealDialog.wsdl',
-           'OmegaFood': 'http://service.astutesolutionsdemo.com/RDWeb/RDService/RealDialog.wsdl'}
-secretKeyList = {'FordPass': 'n24xmbbb', 'OmegaAir': '494w84ni', 'OmegaFood': '04gpmav6','McDonalds': '96adolpp', 'Colgate': '2swsm97y', 'ColgateCard': '2swsm97y', 'ColgateGlobal': 'atorx5s9', 'AC2017': 'Cd10cj0p'}
-kbList = {'FordPass': 'Ford Global', 'OmegaAir': 'OmegaAir', 'OmegaFood': 'Hershey', 'McDonalds': 'McDonalds', 'Colgate': 'AKQA', 'ColgateCard': 'AKQA', 'ColgateGlobal': 'Colgate Global', 'AC2017': 'AC2017'}
-touchPointList = {'FordPass': 'Public', 'OmegaAir': 'Default', 'McDonalds': 'Default', 'OmegaFood': 'Default', 'Colgate': 'Default', 'ColgateCard': 'PublicWeb', 'ColgateGlobal': 'Default', 'AC2017': 'Default'}
-topicContextList = {'FordPass': 'all', 'OmegaAir': 'all', 'McDonalds': 'all', 'Colgate': 'all', 'OmegaFood': 'all', 'ColgateCard': 'all', 'ColgateGlobal': 'all', 'AC2017': 'all'}
+           'OmegaFood': 'http://service.astutesolutionsdemo.com/RDWeb/RDService/RealDialog.wsdl',
+           'SOCAP': 'http://service.astutesolutionsdemo.com/RDWeb/RDService/RealDialog.wsdl'}
+secretKeyList = {'FordPass': 'n24xmbbb', 'OmegaAir': '494w84ni', 'OmegaFood': '04gpmav6','McDonalds': '96adolpp', 'Colgate': '2swsm97y', 'ColgateCard': '2swsm97y', 'ColgateGlobal': 'atorx5s9', 'AC2017': 'Cd10cj0p', 'SOCAP': 'ia72wk3s'}
+kbList = {'FordPass': 'Ford Global', 'OmegaAir': 'OmegaAir', 'OmegaFood': 'Hershey', 'McDonalds': 'McDonalds', 'Colgate': 'AKQA', 'ColgateCard': 'AKQA', 'ColgateGlobal': 'Colgate Global', 'AC2017': 'AC2017', 'SOCAP': 'SOCAPDemo'}
+touchPointList = {'FordPass': 'Public', 'OmegaAir': 'Default', 'McDonalds': 'Default', 'OmegaFood': 'Default', 'Colgate': 'Default', 'ColgateCard': 'PublicWeb', 'ColgateGlobal': 'Default', 'AC2017': 'Default', 'SOCAP': 'bot'}
+topicContextList = {'FordPass': 'all', 'OmegaAir': 'all', 'McDonalds': 'all', 'Colgate': 'all', 'OmegaFood': 'all', 'ColgateCard': 'all', 'ColgateGlobal': 'all', 'AC2017': 'all', 'SOCAP': 'all'}
